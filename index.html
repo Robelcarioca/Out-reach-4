@@ -1,0 +1,1899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OutreachOS — Live Outreach Platform</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{height:100%;width:100%}
+body{
+  background:#080c10;color:#dde4ee;
+  font-family:'Outfit',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#0d1117}
+::-webkit-scrollbar-thumb{background:#1e2d3d;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#2a3f55}
+input,select,textarea,button{font-family:'Outfit',system-ui,sans-serif}
+code,pre,.mono{font-family:'IBM Plex Mono',monospace}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes ripple{0%{transform:scale(0.8);opacity:1}100%{transform:scale(2.4);opacity:0}}
+@keyframes slideRight{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+@keyframes toastSlide{from{opacity:0;transform:translateY(20px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+@keyframes glow{0%,100%{box-shadow:0 0 8px rgba(0,200,130,0.3)}50%{box-shadow:0 0 20px rgba(0,200,130,0.7)}}
+@keyframes countUp{from{opacity:0;transform:scale(0.7)}to{opacity:1;transform:scale(1)}}
+
+.fade-up{animation:fadeUp 0.3s ease forwards}
+.fade-in{animation:fadeIn 0.2s ease forwards}
+.slide-right{animation:slideRight 0.25s ease forwards}
+
+/* Scanline overlay effect */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);
+  pointer-events:none;z-index:9999;
+}
+
+.nav-item{transition:all 0.15s ease;cursor:pointer}
+.nav-item:hover{background:rgba(0,200,130,0.06)!important}
+.nav-item.active{background:rgba(0,200,130,0.1)!important}
+
+.btn{transition:all 0.15s ease;cursor:pointer;border:none;font-family:'Outfit',sans-serif;font-weight:600}
+.btn:hover:not(:disabled){filter:brightness(1.12);transform:translateY(-1px)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
+.btn-primary{background:#00c882;color:#000;border-radius:8px;padding:10px 22px;font-size:13px}
+.btn-ghost{background:transparent;color:#7a8fa6;border:1px solid #1e2d3d;border-radius:8px;padding:10px 18px;font-size:13px}
+.btn-danger{background:transparent;color:#ff4d4d;border:1px solid rgba(255,77,77,0.3);border-radius:8px;padding:8px 14px;font-size:12px}
+.btn-icon{background:transparent;color:#7a8fa6;border:1px solid #1e2d3d;border-radius:6px;padding:6px 10px;font-size:13px}
+
+.card{background:#0d1520;border:1px solid #1a2535;border-radius:12px}
+.input-field{
+  background:#0a1118;border:1px solid #1e2d3d;border-radius:8px;
+  padding:10px 14px;color:#dde4ee;font-size:13px;outline:none;width:100%;
+  transition:border-color 0.15s,box-shadow 0.15s;font-family:'Outfit',sans-serif;
+}
+.input-field:focus{border-color:#00c882;box-shadow:0 0 0 3px rgba(0,200,130,0.1)}
+.input-field::placeholder{color:#3a4f63}
+
+.table-row{transition:background 0.1s ease}
+.table-row:hover{background:rgba(0,200,130,0.03)!important}
+
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.status-live{background:#00c882;animation:pulse 2s ease infinite}
+
+/* Stat card hover */
+.stat-card{transition:transform 0.15s,border-color 0.15s}
+.stat-card:hover{transform:translateY(-2px);border-color:#2a3f55}
+
+/* Reply notification pulse ring */
+.pulse-ring{position:relative}
+.pulse-ring::after{
+  content:'';position:absolute;inset:-4px;border-radius:50%;
+  border:2px solid #00c882;animation:ripple 1.5s ease infinite;
+}
+
+/* Scrollable content */
+.scroll-area{overflow-y:auto;overflow-x:hidden}
+
+/* Tag chips */
+.chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.03em}
+
+/* Tooltip */
+.tooltip{position:relative}
+.tooltip:hover::after{
+  content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;
+  transform:translateX(-50%);background:#1a2535;color:#dde4ee;padding:5px 10px;
+  border-radius:6px;font-size:11px;white-space:nowrap;z-index:100;
+  border:1px solid #2a3f55;pointer-events:none;
+}
+
+/* Progress bar */
+.progress-bar{height:4px;background:#1a2535;border-radius:2px;overflow:hidden}
+.progress-bar-fill{height:100%;border-radius:2px;transition:width 0.4s ease}
+
+/* Live indicator */
+.live-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(0,200,130,0.1);border:1px solid rgba(0,200,130,0.3);
+  color:#00c882;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;
+  font-family:'IBM Plex Mono',monospace;
+}
+
+/* Setup wizard */
+.setup-step{background:#0d1520;border:1px solid #1a2535;border-radius:12px;padding:24px;margin-bottom:14px}
+.setup-step.complete{border-color:rgba(0,200,130,0.3)}
+
+/* AI generating animation */
+.ai-dots span{
+  display:inline-block;width:5px;height:5px;background:#00c882;border-radius:50%;margin:0 2px;
+  animation:pulse 1.2s ease infinite;
+}
+.ai-dots span:nth-child(2){animation-delay:0.2s}
+.ai-dots span:nth-child(3){animation-delay:0.4s}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback,useMemo} = React;
+
+// ─── CONSTANTS ────────────────────────────────────────────
+const SENDER_EMAIL = 'robelgudissa0000@gmail.com';
+const SENDER_NAME  = 'Robel Gudissa';
+const POLL_INTERVAL_MS = 3 * 60 * 1000; // poll Gmail every 3 min
+
+const COLORS = {
+  bg:'#080c10', surface:'#0d1520', card:'#0a1118',
+  border:'#1a2535', border2:'#1e2d3d',
+  accent:'#00c882', accentDim:'rgba(0,200,130,0.15)',
+  blue:'#3b9eff', yellow:'#ffb627', red:'#ff4d4d',
+  purple:'#a78bfa', orange:'#ff7849',
+  text:'#dde4ee', muted:'#7a8fa6', dim:'#3a4f63',
+};
+
+const STATUS_META = {
+  new:       {color:'#3b9eff',bg:'rgba(59,158,255,0.1)',  label:'New'      },
+  contacted: {color:'#ffb627',bg:'rgba(255,182,39,0.1)',  label:'Sent'     },
+  opened:    {color:'#a78bfa',bg:'rgba(167,139,250,0.1)', label:'Opened'   },
+  replied:   {color:'#00c882',bg:'rgba(0,200,130,0.1)',   label:'Replied'  },
+  converted: {color:'#00c882',bg:'rgba(0,200,130,0.15)', label:'Converted'},
+  bounced:   {color:'#ff4d4d',bg:'rgba(255,77,77,0.1)',   label:'Bounced'  },
+  skipped:   {color:'#3a4f63',bg:'rgba(58,79,99,0.1)',    label:'Skipped'  },
+};
+
+const IND_ICON = {
+  'Restaurant':'🍽️','Construction':'🏗️','Law Firm':'⚖️',
+  'Clinic/Medical':'🏥','Clinic':'🏥','Other':'🏢',
+};
+const PROB_ICON = {
+  'Missing SSL (HTTP)':'🔓','Outdated Design':'🎨','Non-mobile responsive':'📱',
+  'Outdated content':'📅','Broken images':'🖼️','Broken links':'🔗',
+  'Slow loading pages':'🐌','Poor navigation':'🧭','Other':'⚠️',
+};
+
+// ─── LOCAL STORAGE HELPERS ────────────────────────────────
+const LS = {
+  get:(k,def=null) => { try{ const v=localStorage.getItem(k); return v?JSON.parse(v):def; }catch{return def;} },
+  set:(k,v) => { try{ localStorage.setItem(k,JSON.stringify(v)); }catch{} },
+  del:(k) => { try{ localStorage.removeItem(k); }catch{} },
+};
+
+// ─── 100 LEADS FROM EXCEL ────────────────────────────────
+const INITIAL_LEADS = [
+{ id:1, business_name:"Mama Rosa\'s Italian Kitchen", industry:"Restaurant", country:"United States", city:"Baton Rouge, LA", website_url:"http://www.mamarosasitalian.com", contact_email:"info@mamarosasitalian.com", website_problem:"Missing SSL (HTTP)", problem_detail:"Site runs on plain HTTP; no HTTPS padlock. Menu page uses a PDF from 2017.", status:"new", region:"🇺🇸 US" },
+  { id:2, business_name:"The Rusty Fork Diner", industry:"Restaurant", country:"United States", city:"Wichita, KS", website_url:"http://therustyfork.net", contact_email:"info@therustyfork.net", website_problem:"Outdated Design", problem_detail:"Fixed-width table-based layout from ~2010; no mobile support; Flash intro still referenced.", status:"new", region:"🇺🇸 US" },
+  { id:3, business_name:"Blue Plate Café", industry:"Restaurant", country:"United States", city:"Augusta, GA", website_url:"http://www.blueplatecafe-augusta.com", contact_email:"info@blueplatecafe-augusta.com", website_problem:"Non-mobile responsive", problem_detail:"Desktop-only layout requires horizontal scrolling on phones; copyright footer reads © 2015.", status:"new", region:"🇺🇸 US" },
+  { id:4, business_name:"Smoky Mountain BBQ Co.", industry:"Restaurant", country:"United States", city:"Knoxville, TN", website_url:"http://smokymtnbbq.com", contact_email:"info@smokymtnbbq.com", website_problem:"Outdated content", problem_detail:"Home page still advertises \'Grand Opening Special – Summer 2016\'. No online ordering.", status:"new", region:"🇺🇸 US" },
+  { id:5, business_name:"Harbor Light Seafood", industry:"Restaurant", country:"United States", city:"Gloucester, MA", website_url:"http://www.harborlightseafood.com", contact_email:"info@harborlightseafood.com", website_problem:"Broken images", problem_detail:"Gallery page shows 12 broken image placeholders; images were hosted on a deleted third-party service.", status:"new", region:"🇺🇸 US" },
+  { id:6, business_name:"El Rancho Tex-Mex", industry:"Restaurant", country:"United States", city:"Lubbock, TX", website_url:"http://elranchotexmex.net", contact_email:"info@elranchotexmex.net", website_problem:"Missing SSL (HTTP)", problem_detail:"HTTP-only site; Google Chrome flags as \'Not Secure\'. Menu is a scanned JPG, not readable on mobile.", status:"new", region:"🇺🇸 US" },
+  { id:7, business_name:"The Velvet Spoon Bistro", industry:"Restaurant", country:"United States", city:"Savannah, GA", website_url:"http://velvetspoonbistro.com", contact_email:"info@velvetspoonbistro.com", website_problem:"Outdated Design", problem_detail:"Early 2000s skeuomorphic design with wooden-texture background tiles; no responsive grid.", status:"new", region:"🇺🇸 US" },
+  { id:8, business_name:"Pete\'s Crab Shack", industry:"Restaurant", country:"United States", city:"Mobile, AL", website_url:"http://petescrabshack.com", contact_email:"info@petescrabshack.com", website_problem:"Outdated content", problem_detail:"Hours page lists \'Holiday 2018 Schedule\'. Online reservation widget returns a 404 error.", status:"new", region:"🇺🇸 US" },
+  { id:9, business_name:"Frontier Steakhouse", industry:"Restaurant", country:"United States", city:"Cheyenne, WY", website_url:"http://www.frontiersteakhouse-wy.com", contact_email:"info@frontiersteakhouse-wy.com", website_problem:"Slow loading pages", problem_detail:"Homepage loads 14 uncompressed high-res photos; GTmetrix score of 28/100; 11-second load time.", status:"new", region:"🇺🇸 US" },
+  { id:10, business_name:"Little Italy Ristorante", industry:"Restaurant", country:"United States", city:"Albuquerque, NM", website_url:"http://littleitalyabq.com", contact_email:"info@littleitalyabq.com", website_problem:"Non-mobile responsive", problem_detail:"Flash-based menu navigation; invisible on iOS/Android. Copyright footer: © 2014.", status:"new", region:"🇺🇸 US" },
+  { id:11, business_name:"Creekside Family Restaurant", industry:"Restaurant", country:"United States", city:"Lexington, KY", website_url:"http://creeksidefamilyrestaurant.net", contact_email:"info@creeksidefamilyrestaurant.net", website_problem:"Broken links", problem_detail:"Navigation menu \'Catering\' link returns Error 404; \'Contact\' form submits to a dead email.", status:"new", region:"🇺🇸 US" },
+  { id:12, business_name:"The Golden Dragon Chinese Buffet", industry:"Restaurant", country:"United States", city:"Springfield, MO", website_url:"http://goldendragonsmo.com", contact_email:"info@goldendragonsmo.com", website_problem:"Outdated content", problem_detail:"Copyright footer: © 2016. Yelp integration widget shows \'Service Unavailable\'.", status:"new", region:"🇺🇸 US" },
+  { id:13, business_name:"Coastal Grille & Bar", industry:"Restaurant", country:"United States", city:"Wilmington, NC", website_url:"http://coastalgrillebar.com", contact_email:"info@coastalgrillebar.com", website_problem:"Poor navigation", problem_detail:"No top navigation bar; only a long single-page scroll with no anchor links or back-to-top.", status:"new", region:"🇺🇸 US" },
+  { id:14, business_name:"Hartley & Sons General Contracting", industry:"Construction", country:"United States", city:"Billings, MT", website_url:"http://hartleysonsconstruction.com", contact_email:"info@hartleysonsconstruction.com", website_problem:"Missing SSL (HTTP)", problem_detail:"HTTP-only, no SSL. Project gallery images are linked from a dead Photobucket URL.", status:"new", region:"🇺🇸 US" },
+  { id:15, business_name:"Pioneer Roofing & Siding", industry:"Construction", country:"United States", city:"Rapid City, SD", website_url:"http://pioneerroofingsd.com", contact_email:"info@pioneerroofingsd.com", website_problem:"Outdated Design", problem_detail:"Counter widget at the bottom shows \'4,219 visitors since 2009\'. Table-based layout.", status:"new", region:"🇺🇸 US" },
+  { id:16, business_name:"Keystone Masonry LLC", industry:"Construction", country:"United States", city:"Lancaster, PA", website_url:"http://keystonemasonrypa.net", contact_email:"info@keystonemasonrypa.net", website_problem:"Non-mobile responsive", problem_detail:"Fixed 800px-wide layout; no viewport meta tag; text unreadable on phones without zooming.", status:"new", region:"🇺🇸 US" },
+  { id:17, business_name:"Sunset Painting & Remodeling", industry:"Construction", country:"United States", city:"Tucson, AZ", website_url:"http://sunsetpaintingtucson.com", contact_email:"info@sunsetpaintingtucson.com", website_problem:"Outdated content", problem_detail:"News section last updated November 2017. Contact page references a disconnected fax number.", status:"new", region:"🇺🇸 US" },
+  { id:18, business_name:"Great Lakes Excavation Inc.", industry:"Construction", country:"United States", city:"Green Bay, WI", website_url:"http://greatlakesexcavation.net", contact_email:"info@greatlakesexcavation.net", website_problem:"Broken images", problem_detail:"Equipment page shows 9 broken image icons where project photos should appear.", status:"new", region:"🇺🇸 US" },
+  { id:19, business_name:"Redwood Carpentry & Trim", industry:"Construction", country:"United States", city:"Eugene, OR", website_url:"http://redwoodcarpentry.com", contact_email:"info@redwoodcarpentry.com", website_problem:"Outdated Design", problem_detail:"Flash-based portfolio viewer; non-functional in all modern browsers. Copyright: © 2013.", status:"new", region:"🇺🇸 US" },
+  { id:20, business_name:"Summit Concrete & Paving", industry:"Construction", country:"United States", city:"Colorado Springs, CO", website_url:"http://summitconcretepaving.com", contact_email:"info@summitconcretepaving.com", website_problem:"Slow loading pages", problem_detail:"Homepage uses unoptimized 6 MB background video; loads in 18+ seconds on 4G.", status:"new", region:"🇺🇸 US" },
+  { id:21, business_name:"Valley Plumbing & HVAC", industry:"Construction", country:"United States", city:"Fresno, CA", website_url:"http://valleyplumbinghvac.net", contact_email:"info@valleyplumbinghvac.net", website_problem:"Missing SSL (HTTP)", problem_detail:"Contact form sends data over HTTP; no encryption. Browser warns \'Not Secure\' on form page.", status:"new", region:"🇺🇸 US" },
+  { id:22, business_name:"Blue Ridge Home Builders", industry:"Construction", country:"United States", city:"Roanoke, VA", website_url:"http://blueridgehomebuilders.com", contact_email:"info@blueridgehomebuilders.com", website_problem:"Outdated content", problem_detail:"Testimonials page features reviews dated 2015–2016. Model home listings show sold inventory.", status:"new", region:"🇺🇸 US" },
+  { id:23, business_name:"Tri-State Electric Co.", industry:"Construction", country:"United States", city:"Fargo, ND", website_url:"http://tristatelectricnd.com", contact_email:"info@tristatelectricnd.com", website_problem:"Poor navigation", problem_detail:"No site menu; links are inline text embedded in dense paragraphs. No mobile nav.", status:"new", region:"🇺🇸 US" },
+  { id:24, business_name:"Lakeland Fencing & Gates", industry:"Construction", country:"United States", city:"Gainesville, FL", website_url:"http://lakelandfencing.net", contact_email:"info@lakelandfencing.net", website_problem:"Broken links", problem_detail:"\'Fence Gallery\' and \'Get a Quote\' buttons both return 404. Site hasn\'t been maintained in years.", status:"new", region:"🇺🇸 US" },
+  { id:25, business_name:"Cornerstone Demolition Services", industry:"Construction", country:"United States", city:"Memphis, TN", website_url:"http://cornerstonedemolition.com", contact_email:"info@cornerstonedemolition.com", website_problem:"Outdated Design", problem_detail:"Marquee scrolling text banner; animated GIF background; WordArt-style headings. circa 2008.", status:"new", region:"🇺🇸 US" },
+  { id:26, business_name:"Cascade Tile & Stone", industry:"Construction", country:"United States", city:"Spokane, WA", website_url:"http://cascadetilestone.net", contact_email:"info@cascadetilestone.net", website_problem:"Non-mobile responsive", problem_detail:"Desktop grid layout breaks on tablets and phones; text overlaps product thumbnails.", status:"new", region:"🇺🇸 US" },
+  { id:27, business_name:"Whitmore & Pace Attorneys at Law", industry:"Law Firm", country:"United States", city:"Jackson, MS", website_url:"http://whitmoreandpacelaw.com", contact_email:"info@whitmoreandpacelaw.com", website_problem:"Missing SSL (HTTP)", problem_detail:"Client intake form transmits over HTTP; no encryption despite collecting personal data.", status:"new", region:"🇺🇸 US" },
+  { id:28, business_name:"Hawkins Legal Group", industry:"Law Firm", country:"United States", city:"Des Moines, IA", website_url:"http://hawkinslegalgroup.net", contact_email:"info@hawkinslegalgroup.net", website_problem:"Outdated Design", problem_detail:"Cluttered 3-column layout from ~2008; clip-art gavel and scales imagery throughout.", status:"new", region:"🇺🇸 US" },
+  { id:29, business_name:"Okafor & Reeves Law Office", industry:"Law Firm", country:"United States", city:"Little Rock, AR", website_url:"http://okaforreevestlaw.com", contact_email:"info@okaforreevestlaw.com", website_problem:"Outdated content", problem_detail:"Attorney bio page still lists a partner who left in 2017. Copyright footer: © 2016.", status:"new", region:"🇺🇸 US" },
+  { id:30, business_name:"The Branson Law Firm", industry:"Law Firm", country:"United States", city:"Tulsa, OK", website_url:"http://bransonlawfirmok.net", contact_email:"info@bransonlawfirmok.net", website_problem:"Non-mobile responsive", problem_detail:"Fixed-width site with tiny font; practice areas page requires horizontal scrolling on mobile.", status:"new", region:"🇺🇸 US" },
+  { id:31, business_name:"Callahan & Storey, P.C.", industry:"Law Firm", country:"United States", city:"Sioux Falls, SD", website_url:"http://callahanstoreylaw.com", contact_email:"info@callahanstoreylaw.com", website_problem:"Broken images", problem_detail:"Headshots of all five attorneys are broken (404) on the Team page.", status:"new", region:"🇺🇸 US" },
+  { id:32, business_name:"Meridian Family Law Center", industry:"Law Firm", country:"United States", city:"Boise, ID", website_url:"http://meridianfamilylaw.net", contact_email:"info@meridianfamilylaw.net", website_problem:"Outdated content", problem_detail:"Blog section lists articles from 2015 as \'Recent Posts\'. 2018 firm newsletter is marked \'Latest\'.", status:"new", region:"🇺🇸 US" },
+  { id:33, business_name:"Covington Elder Law Associates", industry:"Law Firm", country:"United States", city:"Louisville, KY", website_url:"http://covingtonelderlaw.com", contact_email:"info@covingtonelderlaw.com", website_problem:"Slow loading pages", problem_detail:"Homepage contains 8 embedded YouTube videos that auto-load; page takes 15+ seconds.", status:"new", region:"🇺🇸 US" },
+  { id:34, business_name:"Stone & Rafferty Criminal Defense", industry:"Law Firm", country:"United States", city:"Omaha, NE", website_url:"http://stoneraffertylegal.net", contact_email:"info@stoneraffertylegal.net", website_problem:"Outdated Design", problem_detail:"Frames-based layout still in use; dark maroon background with white serif font; circa 2007.", status:"new", region:"🇺🇸 US" },
+  { id:35, business_name:"Tatum Law Group LLC", industry:"Law Firm", country:"United States", city:"Charleston, WV", website_url:"http://tatumlawgroup.com", contact_email:"info@tatumlawgroup.com", website_problem:"Broken links", problem_detail:"Footer \'Resources\' and \'Newsletter\' links both lead to 404 pages.", status:"new", region:"🇺🇸 US" },
+  { id:36, business_name:"Fairview Immigration Law", industry:"Law Firm", country:"United States", city:"El Paso, TX", website_url:"http://fairviewimmigration.net", contact_email:"info@fairviewimmigration.net", website_problem:"Missing SSL (HTTP)", problem_detail:"Entire site on HTTP; potential clients asked to submit sensitive documents via unsecured form.", status:"new", region:"🇺🇸 US" },
+  { id:37, business_name:"Drummond & Kim Attorneys", industry:"Law Firm", country:"United States", city:"Anchorage, AK", website_url:"http://drummondkimlaw.com", contact_email:"info@drummondkimlaw.com", website_problem:"Poor navigation", problem_detail:"No clear navigation; services listed only as a wall of text; no CTAs or contact buttons.", status:"new", region:"🇺🇸 US" },
+  { id:38, business_name:"Parkside Injury Lawyers", industry:"Law Firm", country:"United States", city:"Shreveport, LA", website_url:"http://parksideinjurylawyers.net", contact_email:"info@parksideinjurylawyers.net", website_problem:"Non-mobile responsive", problem_detail:"Desktop-only layout with 1024px fixed width; completely broken on all mobile viewports.", status:"new", region:"🇺🇸 US" },
+  { id:39, business_name:"Maplewood Family Medicine", industry:"Clinic/Medical", country:"United States", city:"Topeka, KS", website_url:"http://maplewoodfamilymed.com", contact_email:"info@maplewoodfamilymed.com", website_problem:"Missing SSL (HTTP)", problem_detail:"Patient portal login served over HTTP; browser flags form as \'Not Secure\'. HIPAA risk.", status:"new", region:"🇺🇸 US" },
+  { id:40, business_name:"River Valley Dental Care", industry:"Clinic/Medical", country:"United States", city:"Peoria, IL", website_url:"http://rivervalleydental.net", contact_email:"info@rivervalleydental.net", website_problem:"Outdated content", problem_detail:"Appointment request form references \'Dr. Miller\' who retired in 2018. Staff bios not updated.", status:"new", region:"🇺🇸 US" },
+  { id:41, business_name:"Sunrise Pediatrics Clinic", industry:"Clinic/Medical", country:"United States", city:"Chattanooga, TN", website_url:"http://sunrisepediatrics.com", contact_email:"info@sunrisepediatrics.com", website_problem:"Non-mobile responsive", problem_detail:"Fixed 960px grid layout; phone number overlaps navigation on any screen under 1024px wide.", status:"new", region:"🇺🇸 US" },
+  { id:42, business_name:"Clearwater Physical Therapy", industry:"Clinic/Medical", country:"United States", city:"Fort Collins, CO", website_url:"http://clearwaterptco.net", contact_email:"info@clearwaterptco.net", website_problem:"Outdated Design", problem_detail:"Background uses tiling GIF texture; early-2000s blue gradient headers; no CSS framework.", status:"new", region:"🇺🇸 US" },
+  { id:43, business_name:"Highland Vision Center", industry:"Clinic/Medical", country:"United States", city:"Huntsville, AL", website_url:"http://highlandvisioncenter.com", contact_email:"info@highlandvisioncenter.com", website_problem:"Broken images", problem_detail:"New patient forms section shows 8 broken PDF icon links; downloads return 404 errors.", status:"new", region:"🇺🇸 US" },
+  { id:44, business_name:"Sagebrush Urgent Care", industry:"Clinic/Medical", country:"United States", city:"Albuquerque, NM", website_url:"http://sagebrushurgentcare.net", contact_email:"info@sagebrushurgentcare.net", website_problem:"Outdated content", problem_detail:"Homepage COVID-19 policy banner from 2020 is still displayed. Wait times not updated since 2021.", status:"new", region:"🇺🇸 US" },
+  { id:45, business_name:"Lakecrest Chiropractic", industry:"Clinic/Medical", country:"United States", city:"Madison, WI", website_url:"http://lakecrestchiro.com", contact_email:"info@lakecrestchiro.com", website_problem:"Slow loading pages", problem_detail:"Unoptimized hero image is 9 MB; page load time exceeds 14 seconds on mobile networks.", status:"new", region:"🇺🇸 US" },
+  { id:46, business_name:"Midtown Dermatology Associates", industry:"Clinic/Medical", country:"United States", city:"Birmingham, AL", website_url:"http://midtowndermatology.net", contact_email:"info@midtowndermatology.net", website_problem:"Missing SSL (HTTP)", problem_detail:"HTTP-only site with no redirect; online booking form sends patient data unencrypted.", status:"new", region:"🇺🇸 US" },
+  { id:47, business_name:"Green Hills Women\'s Health", industry:"Clinic/Medical", country:"United States", city:"Nashville, TN", website_url:"http://greenhillswomenshealth.com", contact_email:"info@greenhillswomenshealth.com", website_problem:"Outdated content", problem_detail:"News page last updated 2017. Insurance accepted list not reviewed since 2016.", status:"new", region:"🇺🇸 US" },
+  { id:48, business_name:"Pinecrest Mental Health Services", industry:"Clinic/Medical", country:"United States", city:"Eugene, OR", website_url:"http://pinecrestmentalhealthor.net", contact_email:"info@pinecrestmentalhealthor.net", website_problem:"Poor navigation", problem_detail:"Therapist directory has no search or filter; only a plain alphabetical list with no links.", status:"new", region:"🇺🇸 US" },
+  { id:49, business_name:"Sunrise Orthopedics & Sports", industry:"Clinic/Medical", country:"United States", city:"Tallahassee, FL", website_url:"http://sunriseorthotfl.com", contact_email:"info@sunriseorthotfl.com", website_problem:"Broken links", problem_detail:"All \'Book Appointment\' buttons link to a third-party scheduler that was decommissioned.", status:"new", region:"🇺🇸 US" },
+  { id:50, business_name:"Riverbend Acupuncture Clinic", industry:"Clinic/Medical", country:"United States", city:"Salt Lake City, UT", website_url:"http://riverbendacupuncture.net", contact_email:"info@riverbendacupuncture.net", website_problem:"Non-mobile responsive", problem_detail:"No viewport tag; small unclickable text links; copyright: © 2015 All Rights Reserved.", status:"new", region:"🇺🇸 US" },
+  { id:51, business_name:"Trattoria del Borgo", industry:"Restaurant", country:"Italy", city:"Perugia", website_url:"http://trattoriadelborgo.it", contact_email:"info@trattoriadelborgo.it", website_problem:"Missing SSL (HTTP)", problem_detail:"HTTP-only site, no HTTPS. Menu is only available as a scanned image PDF from 2017.", status:"new", region:"🇪🇺 Europe" },
+  { id:52, business_name:"Le Vieux Moulin", industry:"Restaurant", country:"France", city:"Limoges", website_url:"http://levieuxmoulin-restaurant.fr", contact_email:"info@levieuxmoulin-restaurant.fr", website_problem:"Outdated Design", problem_detail:"Flash-based intro animation; site uses deprecated <font> HTML tags; copyright © 2014.", status:"new", region:"🇪🇺 Europe" },
+  { id:53, business_name:"Gasthaus Zum Roten Ochsen", industry:"Restaurant", country:"Germany", city:"Würzburg", website_url:"http://gasthausroterochsen.de", contact_email:"info@gasthausroterochsen.de", website_problem:"Non-mobile responsive", problem_detail:"800px fixed-width layout built in 2012; horizontal scroll required on every mobile device.", status:"new", region:"🇪🇺 Europe" },
+  { id:54, business_name:"El Rincón de María", industry:"Restaurant", country:"Spain", city:"Salamanca", website_url:"http://elrincondemariarestaurante.es", contact_email:"info@elrincondemariarestaurante.es", website_problem:"Outdated content", problem_detail:"Menu page shows \'Menú del Día — Verano 2017\'. No online reservations or updated hours.", status:"new", region:"🇪🇺 Europe" },
+  { id:55, business_name:"The Tipsy Crow Pub", industry:"Restaurant", country:"United Kingdom", city:"Worcester", website_url:"http://thetipsycrowworcester.co.uk", contact_email:"info@thetipsycrowworcester.co.uk", website_problem:"Broken images", problem_detail:"Food gallery shows 18 broken image placeholders; images were removed from hosting server.", status:"new", region:"🇪🇺 Europe" },
+  { id:56, business_name:"Ristorante da Claudio", industry:"Restaurant", country:"Italy", city:"Ancona", website_url:"http://ristorantedaclaudio.it", contact_email:"info@ristorantedaclaudio.it", website_problem:"Outdated Design", problem_detail:"Frames-based layout; pixel fonts; no CSS grid; looks identical to its 2006 launch version.", status:"new", region:"🇪🇺 Europe" },
+  { id:57, business_name:"Café de la Fontaine", industry:"Restaurant", country:"France", city:"Clermont-Ferrand", website_url:"http://cafedelafontaine63.fr", contact_email:"info@cafedelafontaine63.fr", website_problem:"Missing SSL (HTTP)", problem_detail:"Plain HTTP; no padlock shown in browser. Contact form submits sensitive data unencrypted.", status:"new", region:"🇪🇺 Europe" },
+  { id:58, business_name:"Zum Goldenen Löwen", industry:"Restaurant", country:"Germany", city:"Regensburg", website_url:"http://gaststaettegoldenerloeve.de", contact_email:"info@gaststaettegoldenerloeve.de", website_problem:"Slow loading pages", problem_detail:"Homepage loads six uncompressed images totaling 22 MB; load time >20 seconds on mobile.", status:"new", region:"🇪🇺 Europe" },
+  { id:59, business_name:"Taberna Los Caballeros", industry:"Restaurant", country:"Spain", city:"Cáceres", website_url:"http://tabernalosccaballeros.es", contact_email:"info@tabernalosccaballeros.es", website_problem:"Non-mobile responsive", problem_detail:"Fixed 1000px layout; navigation collapses behind content on screens below 768px.", status:"new", region:"🇪🇺 Europe" },
+  { id:60, business_name:"The Stag & Hare", industry:"Restaurant", country:"United Kingdom", city:"Shrewsbury", website_url:"http://thestagnhare.co.uk", contact_email:"info@thestagnhare.co.uk", website_problem:"Outdated content", problem_detail:"Events calendar last updated December 2018. Sunday roast menu unchanged since 2017.", status:"new", region:"🇪🇺 Europe" },
+  { id:61, business_name:"Osteria La Piazzetta", industry:"Restaurant", country:"Italy", city:"Brescia", website_url:"http://osteriapiazzettabrescia.it", contact_email:"info@osteriapiazzettabrescia.it", website_problem:"Broken links", problem_detail:"\'Prenota Tavolo\' (reservation) button leads to a 404. Social media icons link to deactivated accounts.", status:"new", region:"🇪🇺 Europe" },
+  { id:62, business_name:"Brasserie du Lac", industry:"Restaurant", country:"France", city:"Annecy", website_url:"http://brasseriedlac-annecy.fr", contact_email:"info@brasseriedlac-annecy.fr", website_problem:"Poor navigation", problem_detail:"No site menu bar; single-page design with unlabelled anchor links; no mobile hamburger menu.", status:"new", region:"🇪🇺 Europe" },
+  { id:63, business_name:"Mesón del Pastor", industry:"Restaurant", country:"Spain", city:"Zamora", website_url:"http://meson-delpastor.es", contact_email:"info@meson-delpastor.es", website_problem:"Missing SSL (HTTP)", problem_detail:"HTTP only; online ordering attempted via unencrypted POST form. Copyright: © 2016.", status:"new", region:"🇪🇺 Europe" },
+  { id:64, business_name:"Bianchi Costruzioni Srl", industry:"Construction", country:"Italy", city:"Bergamo", website_url:"http://bianchicostituzioni.it", contact_email:"info@bianchicostituzioni.it", website_problem:"Missing SSL (HTTP)", problem_detail:"HTTP site with a contact form that collects company data; no HTTPS encryption in place.", status:"new", region:"🇪🇺 Europe" },
+  { id:65, business_name:"Müller Bau GmbH", industry:"Construction", country:"Germany", city:"Erfurt", website_url:"http://muellerbaugmbh.de", contact_email:"info@muellerbaugmbh.de", website_problem:"Outdated Design", problem_detail:"Tables-and-frames layout from ~2009; no semantic HTML; page title still reads \'Untitled Document\'.", status:"new", region:"🇪🇺 Europe" },
+  { id:66, business_name:"Constructions Dupont et Fils", industry:"Construction", country:"France", city:"Reims", website_url:"http://constructionsdupont.fr", contact_email:"info@constructionsdupont.fr", website_problem:"Outdated content", problem_detail:"Project portfolio last updated in 2017. \'Current Projects\' page lists completed 2016 jobs.", status:"new", region:"🇪🇺 Europe" },
+  { id:67, business_name:"García & Hermanos Obras", industry:"Construction", country:"Spain", city:"Valladolid", website_url:"http://garciayhermaossrl.es", contact_email:"info@garciayhermaossrl.es", website_problem:"Non-mobile responsive", problem_detail:"Fixed 1024px layout; portfolio images overflow container on any viewport below 900px.", status:"new", region:"🇪🇺 Europe" },
+  { id:68, business_name:"Pemberton Building Services", industry:"Construction", country:"United Kingdom", city:"Nottingham", website_url:"http://pembertonbuilding.co.uk", contact_email:"info@pembertonbuilding.co.uk", website_problem:"Broken images", problem_detail:"All project photos on \'Our Work\' page return 404; linked from a discontinued Flickr account.", status:"new", region:"🇪🇺 Europe" },
+  { id:69, business_name:"Rossi Impianti e Costruzioni", industry:"Construction", country:"Italy", city:"Verona", website_url:"http://rossiimpianticonstruzioni.it", contact_email:"info@rossiimpianticonstruzioni.it", website_problem:"Slow loading pages", problem_detail:"Site loads 4 large PDFs automatically on homepage; 19-second load time on standard broadband.", status:"new", region:"🇪🇺 Europe" },
+  { id:70, business_name:"Bauunternehmen Krause", industry:"Construction", country:"Germany", city:"Halle", website_url:"http://bauunternehmenkrause.de", contact_email:"info@bauunternehmenkrause.de", website_problem:"Outdated Design", problem_detail:"Animated GIF \'Under Construction\' image on services page; marquee text; circa 2005 design.", status:"new", region:"🇪🇺 Europe" },
+  { id:71, business_name:"Construcciones Méndez S.L.", industry:"Construction", country:"Spain", city:"Oviedo", website_url:"http://construccionesmendessl.es", contact_email:"info@construccionesmendessl.es", website_problem:"Poor navigation", problem_detail:"Navigation links are plain text at page bottom only; no header nav; no internal linking.", status:"new", region:"🇪🇺 Europe" },
+  { id:72, business_name:"Thornton & Hall Contractors", industry:"Construction", country:"United Kingdom", city:"Bristol", website_url:"http://thorntonhallcontractors.co.uk", contact_email:"info@thorntonhallcontractors.co.uk", website_problem:"Outdated content", problem_detail:"Team page lists staff members who left years ago. H&S certificates shown expired 2019.", status:"new", region:"🇪🇺 Europe" },
+  { id:73, business_name:"CBTP Travaux Publics", industry:"Construction", country:"France", city:"Tours", website_url:"http://cbtp-travauxpublics.fr", contact_email:"info@cbtp-travauxpublics.fr", website_problem:"Missing SSL (HTTP)", problem_detail:"HTTP-only site; Google marks \'Not Secure\'. Quote request form sends data unencrypted.", status:"new", region:"🇪🇺 Europe" },
+  { id:74, business_name:"Santoro Restauri e Costruzioni", industry:"Construction", country:"Italy", city:"Catania", website_url:"http://santororestauri.it", contact_email:"info@santororestauri.it", website_problem:"Broken links", problem_detail:"Services sub-pages all return \'Error 500\'. Only homepage renders; all internal links fail.", status:"new", region:"🇪🇺 Europe" },
+  { id:75, business_name:"Nordic Bygg AB", industry:"Construction", country:"Sweden", city:"Örebro", website_url:"http://nordicbyggab.se", contact_email:"info@nordicbyggab.se", website_problem:"Non-mobile responsive", problem_detail:"Desktop-only site; navigation hidden off-screen on phones; no responsive breakpoints set.", status:"new", region:"🇪🇺 Europe" },
+  { id:76, business_name:"Studio Legale Ricci & Bonfiglio", industry:"Law Firm", country:"Italy", city:"Bologna", website_url:"http://studiolegaleribonfiglio.it", contact_email:"info@studiolegaleribonfiglio.it", website_problem:"Missing SSL (HTTP)", problem_detail:"Collects client contact data via HTTP form; no padlock; Chrome flags \'Not Secure\'.", status:"new", region:"🇪🇺 Europe" },
+  { id:77, business_name:"Cabinet Maître Lefebvre", industry:"Law Firm", country:"France", city:"Rouen", website_url:"http://cabinetmaitrelefebvre.fr", contact_email:"info@cabinetmaitrelefebvre.fr", website_problem:"Outdated Design", problem_detail:"Two-frame layout with fixed left nav; background image is a faded courthouse stock photo circa 2008.", status:"new", region:"🇪🇺 Europe" },
+  { id:78, business_name:"Rechtsanwaltskanzlei Brandt", industry:"Law Firm", country:"Germany", city:"Dortmund", website_url:"http://kanzleibrandt.de", contact_email:"info@kanzleibrandt.de", website_problem:"Non-mobile responsive", problem_detail:"800px fixed layout built before responsive era; all text and images overflow on mobile.", status:"new", region:"🇪🇺 Europe" },
+  { id:79, business_name:"Bufete Jurídico Gallego", industry:"Law Firm", country:"Spain", city:"Vigo", website_url:"http://bufetejuridicogallego.es", contact_email:"info@bufetejuridicogallego.es", website_problem:"Outdated content", problem_detail:"News page references 2016 Spanish legal reforms as \'breaking news\'. Staff bio page not updated.", status:"new", region:"🇪🇺 Europe" },
+  { id:80, business_name:"Hendricks & Wren Solicitors", industry:"Law Firm", country:"United Kingdom", city:"Hull", website_url:"http://hendrickswrensolicitors.co.uk", contact_email:"info@hendrickswrensolicitors.co.uk", website_problem:"Broken images", problem_detail:"Team photos for all solicitors return 404; profile images were deleted from hosting.", status:"new", region:"🇪🇺 Europe" },
+  { id:81, business_name:"Advocatenkantoor Van den Berg", industry:"Law Firm", country:"Netherlands", city:"Eindhoven", website_url:"http://advocatenkantoorvandenberg.nl", contact_email:"info@advocatenkantoorvandenberg.nl", website_problem:"Missing SSL (HTTP)", problem_detail:"HTTP-only practice with no HTTPS. Contact form sends personal inquiry data unencrypted.", status:"new", region:"🇪🇺 Europe" },
+  { id:82, business_name:"Studio Legale Ferrero", industry:"Law Firm", country:"Italy", city:"Alessandria", website_url:"http://studiolegale-ferrero.it", contact_email:"info@studiolegale-ferrero.it", website_problem:"Slow loading pages", problem_detail:"Homepage embeds 5 auto-loading video testimonials; GTmetrix performance score 18/100.", status:"new", region:"🇪🇺 Europe" },
+  { id:83, business_name:"Breymann Rechtsanwälte", industry:"Law Firm", country:"Germany", city:"Magdeburg", website_url:"http://breymannrechtsanwaelte.de", contact_email:"info@breymannrechtsanwaelte.de", website_problem:"Outdated Design", problem_detail:"Tiled marble-texture background; yellow Comic Sans-style heading font; no CSS reset; circa 2006.", status:"new", region:"🇪🇺 Europe" },
+  { id:84, business_name:"García Ruiz Abogados", industry:"Law Firm", country:"Spain", city:"Murcia", website_url:"http://garciaruizabogados.es", contact_email:"info@garciaruizabogados.es", website_problem:"Outdated content", problem_detail:"Blog has 0 posts since 2017. \'News & Updates\' section shows 2016 regulations as current law.", status:"new", region:"🇪🇺 Europe" },
+  { id:85, business_name:"Faulkner & Moss LLP", industry:"Law Firm", country:"United Kingdom", city:"Derby", website_url:"http://faulknermossllp.co.uk", contact_email:"info@faulknermossllp.co.uk", website_problem:"Non-mobile responsive", problem_detail:"Fixed 1024px layout; no hamburger menu on mobile; legal notices too small to read on phones.", status:"new", region:"🇪🇺 Europe" },
+  { id:86, business_name:"Cabinet Juridique Mounier", industry:"Law Firm", country:"France", city:"Besançon", website_url:"http://cabinetjuridiquemounier.fr", contact_email:"info@cabinetjuridiquemounier.fr", website_problem:"Broken links", problem_detail:"\'Our Services\' and \'Contact Us\' links in the footer both return 404 error pages.", status:"new", region:"🇪🇺 Europe" },
+  { id:87, business_name:"Studio Legale Pellegrini", industry:"Law Firm", country:"Italy", city:"Padova", website_url:"http://studiolegalepellegrini.it", contact_email:"info@studiolegalepellegrini.it", website_problem:"Poor navigation", problem_detail:"Single-page site with no menu; sections are reachable only by endless scrolling; no anchors.", status:"new", region:"🇪🇺 Europe" },
+  { id:88, business_name:"Kuijpers & Bos Advocaten", industry:"Law Firm", country:"Netherlands", city:"Tilburg", website_url:"http://kuijpersenobsadvocaten.nl", contact_email:"info@kuijpersenobsadvocaten.nl", website_problem:"Outdated content", problem_detail:"Team page lists a founding partner who passed away in 2018; no update since then. © 2015.", status:"new", region:"🇪🇺 Europe" },
+  { id:89, business_name:"Clinica Medica San Luca", industry:"Clinic/Medical", country:"Italy", city:"Palermo", website_url:"http://clinicasanlucapalermo.it", contact_email:"info@clinicasanlucapalermo.it", website_problem:"Missing SSL (HTTP)", problem_detail:"Patient appointment form runs over HTTP; sensitive health data transmitted without encryption.", status:"new", region:"🇪🇺 Europe" },
+  { id:90, business_name:"Cabinet Médical Dr. Fontaine", industry:"Clinic/Medical", country:"France", city:"Metz", website_url:"http://cabinetmedicaldrfontaine.fr", contact_email:"info@cabinetmedicaldrfontaine.fr", website_problem:"Outdated content", problem_detail:"Doctor\'s CV section still shows 2014 publications as most recent. Vaccination schedule from 2016.", status:"new", region:"🇪🇺 Europe" },
+  { id:91, business_name:"Arztpraxis Dr. Sommer", industry:"Clinic/Medical", country:"Germany", city:"Kassel", website_url:"http://arztpraxisdrsommer.de", contact_email:"info@arztpraxisdrsommer.de", website_problem:"Outdated Design", problem_detail:"HTML 3.2 table layout with spacer GIFs; no DOCTYPE declaration; looks like 1998 web design.", status:"new", region:"🇪🇺 Europe" },
+  { id:92, business_name:"Clínica Dental Herrera", industry:"Clinic/Medical", country:"Spain", city:"Córdoba", website_url:"http://clinicadentalherrera.es", contact_email:"info@clinicadentalherrera.es", website_problem:"Non-mobile responsive", problem_detail:"Fixed 760px wide layout; dental service images overflow page container on all mobile screens.", status:"new", region:"🇪🇺 Europe" },
+  { id:93, business_name:"Beechwood Medical Practice", industry:"Clinic/Medical", country:"United Kingdom", city:"Coventry", website_url:"http://beechwoodmedicalpractice.co.uk", contact_email:"info@beechwoodmedicalpractice.co.uk", website_problem:"Broken images", problem_detail:"Practice facilities photo gallery shows 14 broken image icons; all hosted on expired service.", status:"new", region:"🇪🇺 Europe" },
+  { id:94, business_name:"Praktijk voor Fysiotherapie Bakker", industry:"Clinic/Medical", country:"Netherlands", city:"Groningen", website_url:"http://fysiotherapiebakker.nl", contact_email:"info@fysiotherapiebakker.nl", website_problem:"Slow loading pages", problem_detail:"Homepage takes 17 seconds to load due to 8 embedded YouTube video thumbnails pre-loading.", status:"new", region:"🇪🇺 Europe" },
+  { id:95, business_name:"Centro de Salud Montserrat", industry:"Clinic/Medical", country:"Spain", city:"Lleida", website_url:"http://centrosalud-montserrat.es", contact_email:"info@centrosalud-montserrat.es", website_problem:"Outdated content", problem_detail:"COVID triage procedures from April 2020 still shown as current guidance. Hours unchanged since 2019.", status:"new", region:"🇪🇺 Europe" },
+  { id:96, business_name:"Dr. Łukasz Wierzbicki Gabinet", industry:"Clinic/Medical", country:"Poland", city:"Poznań", website_url:"http://gabinet-wierzbicki.pl", contact_email:"info@gabinet-wierzbicki.pl", website_problem:"Missing SSL (HTTP)", problem_detail:"HTTP-only Polish medical practice site; patient contact form unencrypted; no GDPR compliance notice.", status:"new", region:"🇪🇺 Europe" },
+  { id:97, business_name:"Poliklinik Zeynep Açıl", industry:"Clinic/Medical", country:"Turkey", city:"Izmir", website_url:"http://poliklinikzeynepacil.com", contact_email:"info@poliklinikzeynepacil.com", website_problem:"Outdated Design", problem_detail:"Framed layout with auto-playing MIDI background music; animated welcome GIF; circa 2004.", status:"new", region:"🇪🇺 Europe" },
+  { id:98, business_name:"Klinik für Allgemeinmedizin Beck", industry:"Clinic/Medical", country:"Germany", city:"Rostock", website_url:"http://klinikallgemeinmedizinbeck.de", contact_email:"info@klinikallgemeinmedizinbeck.de", website_problem:"Non-mobile responsive", problem_detail:"No responsive design; two-column table layout breaks into single-column overlap on phones.", status:"new", region:"🇪🇺 Europe" },
+  { id:99, business_name:"Clinique Vétérinaire Marchetti", industry:"Clinic/Medical", country:"France", city:"Grenoble", website_url:"http://cliniqueveterinairemarchetti.fr", contact_email:"info@cliniqueveterinairemarchetti.fr", website_problem:"Broken links", problem_detail:"\'Prendre Rendez-vous\' (book appointment) link returns 404; online booking was never replaced.", status:"new", region:"🇪🇺 Europe" },
+  { id:100, business_name:"Tanács Egészségügyi Központ", industry:"Clinic/Medical", country:"Hungary", city:"Pécs", website_url:"http://tanacsegeszseggikozpont.hu", contact_email:"info@tanacsegeszseggikozpont.hu", website_problem:"Poor navigation", problem_detail:"Navigation entirely in Hungarian with no language switch; menu items hidden in dropdowns without labels; no breadcrumbs.", status:"new", region:"🇪🇺 Europe" },
+];
+
+// ─── GEMINI AI SERVICE ────────────────────────────────────
+const AIService = {
+  async _call(prompt, cfg, maxTokens=600) {
+    const model = cfg.geminiModel || 'gemini-2.5-flash';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': cfg.geminiKey,
+      },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: maxTokens, temperature: 0.85 },
+      }),
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(()=>({}));
+      const msg = err?.error?.message || `Gemini error ${resp.status}`;
+      throw new Error(msg);
+    }
+    const data = await resp.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('Gemini returned empty response');
+    return text.trim();
+  },
+
+  async generateEmail(lead, cfg) {
+    const { portfolioUrl, yourName, yourTitle } = cfg;
+    const prompt = `You are ${yourName || 'Robel Gudissa'}, a web design consultant writing a cold outreach email to a potential client.
+
+Business: ${lead.business_name}
+Industry: ${lead.industry}
+Location: ${lead.city}, ${lead.country}
+Website: ${lead.website_url}
+Specific problem found: ${lead.website_problem} — ${lead.problem_detail}
+Your portfolio: ${portfolioUrl || 'https://yourportfolio.com'}
+
+Write a SHORT, highly personalized cold outreach email. Rules:
+- 3-4 paragraphs max
+- First line must reference their SPECIFIC business and problem immediately (no generic openers)
+- Mention the exact website issue with a concrete consequence (lost customers, trust issues, etc.)
+- Include ONE sentence about your portfolio: "You can see examples of my work at ${portfolioUrl || 'https://yourportfolio.com'}"
+- End with a simple call-to-action: ask for a 15-minute call
+- Tone: professional but warm, like a helpful expert not a salesperson
+- NO subject line, just the body
+- Sign off as: ${yourName || 'Robel Gudissa'}, ${yourTitle || 'Web Design Consultant'}
+
+Output ONLY the email body text. No subject line, no metadata.`;
+    return this._call(prompt, cfg, 600);
+  },
+
+  async generateSubject(lead, cfg) {
+    const prompt = `Write a single compelling cold email subject line for this business:
+Business: ${lead.business_name} (${lead.industry} in ${lead.city}, ${lead.country})
+Website issue: ${lead.website_problem}
+
+Rules: Max 60 chars. No clickbait. Professional. Reference their business or specific issue.
+Output ONLY the subject line, nothing else.`;
+    const result = await this._call(prompt, cfg, 80);
+    return result.replace(/^["']|["']$/g, '').split('\n')[0].trim();
+  },
+};
+
+// ─── EMAILJS SERVICE ───────────────────────────────────────
+const EmailService = {
+  init(publicKey) {
+    if (window.emailjs && publicKey) {
+      window.emailjs.init({ publicKey });
+      return true;
+    }
+    return false;
+  },
+
+  async send(lead, emailBody, subject, cfg) {
+    return window.emailjs.send(cfg.serviceId, cfg.templateId, {
+      to_email:        lead.contact_email,
+      to_name:         lead.business_name,
+      from_name:       cfg.yourName || SENDER_NAME,
+      reply_to:        SENDER_EMAIL,
+      subject,
+      email_body:      emailBody,
+      portfolio_url:   cfg.portfolioUrl || '',
+      website_url:     lead.website_url,
+      website_problem: lead.website_problem,
+      industry:        lead.industry,
+      city:            lead.city,
+      country:         lead.country,
+      unsubscribe_note:'You received this because your email is publicly listed as a business contact.',
+    });
+  },
+};
+
+// ─── GMAIL API SERVICE ─────────────────────────────────────
+const GmailService = {
+  _token: null,
+  _tokenClient: null,
+
+  init(clientId, callback) {
+    if (!window.google?.accounts?.oauth2) return false;
+    this._tokenClient = window.google.accounts.oauth2.initTokenClient({
+      client_id: clientId,
+      scope: 'https://www.googleapis.com/auth/gmail.readonly',
+      callback: (resp) => {
+        if (resp.error) { callback(null, resp.error); return; }
+        this._token = resp.access_token;
+        callback(resp.access_token, null);
+      },
+    });
+    return true;
+  },
+
+  requestToken() {
+    if (this._tokenClient) this._tokenClient.requestAccessToken({ prompt: '' });
+  },
+
+  async fetchReplies(sentLeads) {
+    if (!this._token) return [];
+    // Search for messages sent TO our address (replies) in last 30 days
+    const after = Math.floor((Date.now() - 30*24*60*60*1000)/1000);
+    const q = encodeURIComponent(`to:${SENDER_EMAIL} after:${after}`);
+    const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${q}&maxResults=50`;
+    const resp = await fetch(url, {
+      headers: { Authorization: `Bearer ${this._token}` }
+    });
+    if (!resp.ok) {
+      if (resp.status === 401) this._token = null; // token expired
+      return [];
+    }
+    const data = await resp.json();
+    if (!data.messages?.length) return [];
+
+    // Fetch details for each message
+    const details = await Promise.allSettled(
+      data.messages.slice(0, 20).map(m =>
+        fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`, {
+          headers: { Authorization: `Bearer ${this._token}` }
+        }).then(r => r.json())
+      )
+    );
+
+    const replies = [];
+    for (const d of details) {
+      if (d.status !== 'fulfilled') continue;
+      const msg = d.value;
+      const headers = msg.payload?.headers || [];
+      const from    = headers.find(h => h.name === 'From')?.value || '';
+      const subject = headers.find(h => h.name === 'Subject')?.value || '';
+      const date    = headers.find(h => h.name === 'Date')?.value || '';
+
+      // Try to match to a sent lead
+      const emailMatch = from.match(/[\w._%+\-]+@[\w.\-]+\.[a-z]{2,}/i);
+      const senderEmail = emailMatch ? emailMatch[0].toLowerCase() : '';
+
+      const matchedLead = sentLeads.find(l =>
+        l.contact_email?.toLowerCase() === senderEmail
+      );
+
+      replies.push({
+        id:          msg.id,
+        from,
+        senderEmail,
+        subject,
+        date,
+        snippet:     msg.snippet || '',
+        leadId:      matchedLead?.id || null,
+        leadName:    matchedLead?.business_name || null,
+      });
+    }
+    return replies;
+  },
+};
+
+// ─── NOTIFICATION SERVICE ──────────────────────────────────
+const NotifService = {
+  async requestPermission() {
+    if (!('Notification' in window)) return false;
+    const perm = await Notification.requestPermission();
+    return perm === 'granted';
+  },
+  show(title, body, icon = '📧') {
+    if (Notification.permission !== 'granted') return;
+    new Notification(`${icon} ${title}`, { body, icon: '/favicon.ico' });
+  },
+};
+
+
+// ─── SMALL UI COMPONENTS ───────────────────────────────────
+
+const Badge = ({ status, small }) => {
+  const s = STATUS_META[status] || {color:COLORS.muted,bg:'rgba(122,143,166,0.1)',label:status};
+  return (
+    <span style={{
+      background:s.bg, color:s.color,
+      padding: small ? '2px 8px' : '3px 11px',
+      borderRadius:20, fontSize: small?10:11, fontWeight:700,
+      border:`1px solid ${s.color}33`, whiteSpace:'nowrap', letterSpacing:'0.02em',
+      fontFamily:"'IBM Plex Mono',monospace",
+    }}>{s.label}</span>
+  );
+};
+
+const Spinner = ({size=14, color=COLORS.accent}) => (
+  <span style={{
+    display:'inline-block',width:size,height:size,
+    border:`2px solid ${color}33`,borderTopColor:color,
+    borderRadius:'50%',animation:'spin 0.7s linear infinite',flexShrink:0,
+  }}/>
+);
+
+const Field = ({label, required, hint, children}) => (
+  <div style={{display:'flex',flexDirection:'column',gap:6}}>
+    <label style={{fontSize:11,color:COLORS.muted,fontWeight:700,
+      textTransform:'uppercase',letterSpacing:'0.08em',display:'flex',gap:6,alignItems:'center'}}>
+      {label}
+      {required && <span style={{color:COLORS.red,fontSize:10}}>*</span>}
+      {hint && <span style={{color:COLORS.dim,fontWeight:400,textTransform:'none',
+        letterSpacing:0,fontSize:11}}>{hint}</span>}
+    </label>
+    {children}
+  </div>
+);
+
+const Modal = ({onClose, children, width=520, noPad}) => (
+  <div onClick={onClose} style={{
+    position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',
+    display:'flex',alignItems:'center',justifyContent:'center',
+    zIndex:600,backdropFilter:'blur(10px)',
+  }}>
+    <div onClick={e=>e.stopPropagation()} style={{
+      background:COLORS.surface,border:`1px solid ${COLORS.border}`,
+      borderRadius:14,padding:noPad?0:28,width,maxWidth:'95vw',
+      maxHeight:'92vh',overflowY:'auto',
+      boxShadow:'0 40px 100px rgba(0,0,0,0.9)',
+      animation:'fadeUp 0.2s ease forwards',
+    }}>
+      {children}
+    </div>
+  </div>
+);
+
+const ModalHeader = ({title, onClose, icon}) => (
+  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22}}>
+    <div style={{display:'flex',alignItems:'center',gap:10}}>
+      {icon && <span style={{fontSize:20}}>{icon}</span>}
+      <span style={{fontWeight:800,fontSize:16,letterSpacing:'-0.02em'}}>{title}</span>
+    </div>
+    <button onClick={onClose} style={{
+      background:'none',border:'none',color:COLORS.muted,fontSize:22,
+      cursor:'pointer',lineHeight:1,padding:'0 4px',transition:'color 0.1s',
+    }}
+    onMouseEnter={e=>e.target.style.color=COLORS.text}
+    onMouseLeave={e=>e.target.style.color=COLORS.muted}>×</button>
+  </div>
+);
+
+const StatCard = ({label, value, sub, icon, color, delay=0, trend}) => (
+  <div className="card stat-card fade-up" style={{
+    padding:'20px 22px',display:'flex',flexDirection:'column',gap:8,
+    animationDelay:`${delay}ms`,cursor:'default',
+  }}>
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+      <span style={{fontSize:11,color:COLORS.muted,fontWeight:700,
+        textTransform:'uppercase',letterSpacing:'0.1em'}}>{label}</span>
+      <span style={{fontSize:18,opacity:0.8}}>{icon}</span>
+    </div>
+    <div style={{fontSize:34,fontWeight:900,color:color||COLORS.accent,lineHeight:1,
+      fontFamily:"'IBM Plex Mono',monospace",letterSpacing:'-0.03em',
+      animation:'countUp 0.4s ease forwards',animationDelay:`${delay+100}ms`,opacity:0,
+      animationFillMode:'forwards',
+    }}>{value}</div>
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+      {sub && <span style={{fontSize:11,color:COLORS.muted}}>{sub}</span>}
+      {trend !== undefined && (
+        <span style={{fontSize:11,fontWeight:700,
+          color:trend>=0?COLORS.accent:COLORS.red,fontFamily:"'IBM Plex Mono',monospace"}}>
+          {trend>=0?'↑':'↓'}{Math.abs(trend)}%
+        </span>
+      )}
+    </div>
+  </div>
+);
+
+const Toast = ({msg, type, onDone}) => {
+  useEffect(()=>{ const t=setTimeout(onDone, 3200); return ()=>clearTimeout(t); },[]);
+  const colors = {ok:[COLORS.accent,'rgba(0,200,130,0.08)'],err:[COLORS.red,'rgba(255,77,77,0.08)'],
+    warn:[COLORS.yellow,'rgba(255,182,39,0.08)'],info:[COLORS.blue,'rgba(59,158,255,0.08)']};
+  const [clr,bg] = colors[type]||colors.ok;
+  return (
+    <div style={{
+      position:'fixed',bottom:24,left:'50%',transform:'translateX(-50%)',
+      background:COLORS.surface,border:`1px solid ${clr}44`,
+      borderRadius:10,padding:'12px 22px',zIndex:1000,
+      boxShadow:`0 12px 40px rgba(0,0,0,0.7), 0 0 0 1px ${clr}22`,
+      animation:'toastSlide 0.25s ease forwards',
+      display:'flex',alignItems:'center',gap:12,
+      minWidth:260,maxWidth:480,
+    }}>
+      <span style={{fontSize:16}}>{type==='err'?'❌':type==='warn'?'⚠️':type==='info'?'ℹ️':'✅'}</span>
+      <span style={{fontSize:13,fontWeight:600,color:COLORS.text,flex:1}}>{msg}</span>
+      <button onClick={onDone} style={{background:'none',border:'none',
+        color:COLORS.muted,cursor:'pointer',fontSize:16,padding:'0 2px'}}>×</button>
+    </div>
+  );
+};
+
+const ProgressBanner = ({state, onStop, onClose}) => {
+  if (!state.running && state.total === 0) return null;
+  const pct = state.total ? Math.round((state.done/state.total)*100) : 0;
+  return (
+    <div style={{
+      position:'fixed',bottom:24,left:'50%',transform:'translateX(-50%)',
+      background:COLORS.surface,border:`1px solid ${state.running?COLORS.accent:COLORS.accent}44`,
+      borderRadius:12,padding:'16px 22px',zIndex:500,minWidth:440,maxWidth:560,
+      boxShadow:'0 20px 60px rgba(0,0,0,0.8)',
+      animation:'fadeUp 0.2s ease forwards',
+    }}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          {state.running ? <Spinner size={14}/> : <span style={{color:COLORS.accent,fontSize:16}}>✓</span>}
+          <div>
+            <div style={{fontWeight:700,fontSize:13}}>
+              {state.running ? `Sending to ${state.current||'...'}` : 'Campaign Complete'}
+            </div>
+            {state.running && state.aiGenerating && (
+              <div style={{fontSize:11,color:COLORS.muted,display:'flex',alignItems:'center',gap:5,marginTop:2}}>
+                <span>AI writing email</span>
+                <span className="ai-dots"><span/><span/><span/></span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <span style={{fontFamily:"'IBM Plex Mono',monospace",fontSize:13,
+            color:state.running?COLORS.accent:COLORS.accent,fontWeight:700}}>
+            {state.done}/{state.total}
+          </span>
+          {state.running
+            ? <button onClick={onStop} className="btn btn-danger" style={{padding:'5px 12px',fontSize:11}}>⏹ Stop</button>
+            : <button onClick={onClose} style={{background:'none',border:'none',
+                color:COLORS.muted,cursor:'pointer',fontSize:18,padding:'0 2px'}}>×</button>
+          }
+        </div>
+      </div>
+      <div className="progress-bar">
+        <div className="progress-bar-fill" style={{
+          width:`${pct}%`,
+          background:`linear-gradient(90deg, ${COLORS.accent}, #00e8a0)`,
+        }}/>
+      </div>
+      <div style={{display:'flex',justifyContent:'space-between',marginTop:7,fontSize:11,color:COLORS.muted}}>
+        <span>{pct}% complete</span>
+        {state.errors.length>0 && <span style={{color:COLORS.red}}>⚠️ {state.errors.length} failed</span>}
+        {state.done>0 && !state.running && <span style={{color:COLORS.accent}}>✓ {state.done} emails sent</span>}
+      </div>
+    </div>
+  );
+};
+
+// Setup status check chip
+const SetupChip = ({ok, label}) => (
+  <div style={{
+    display:'flex',alignItems:'center',gap:7,padding:'7px 12px',
+    background: ok ? 'rgba(0,200,130,0.08)' : 'rgba(255,77,77,0.08)',
+    border: `1px solid ${ok ? COLORS.accent : COLORS.red}33`,
+    borderRadius:8,fontSize:12,fontWeight:600,
+  }}>
+    <span style={{color: ok ? COLORS.accent : COLORS.red}}>{ok ? '✓' : '✗'}</span>
+    <span style={{color: ok ? COLORS.text : COLORS.muted}}>{label}</span>
+  </div>
+);
+
+
+// ─── LEAD EDIT MODAL ──────────────────────────────────────
+const INDUSTRIES = ['Restaurant','Construction','Law Firm','Clinic/Medical','Other'];
+const PROBLEMS = ['Missing SSL (HTTP)','Outdated Design','Non-mobile responsive',
+  'Outdated content','Broken images','Broken links','Slow loading pages','Poor navigation','Other'];
+
+const EMPTY_LEAD = {
+  business_name:'',industry:'Restaurant',country:'',city:'',
+  website_url:'',contact_email:'',website_problem:'Missing SSL (HTTP)',problem_detail:'',
+};
+
+const LeadModal = ({lead, onClose, onSave}) => {
+  const [form, setForm] = useState(lead ? {...lead} : EMPTY_LEAD);
+  const [saving, setSaving] = useState(false);
+  const upd = (k,v) => setForm(f=>({...f,[k]:v}));
+
+  const handleSave = async () => {
+    if (!form.business_name.trim() || !form.contact_email.trim()) return;
+    setSaving(true);
+    await new Promise(r=>setTimeout(r,300));
+    onSave({...form, id: lead?.id || Date.now(), status: lead?.status||'new'});
+  };
+
+  const IS = {
+    background:COLORS.card, border:`1px solid ${COLORS.border2}`,
+    borderRadius:8, padding:'10px 14px', color:COLORS.text,
+    fontSize:13, outline:'none', width:'100%',
+    fontFamily:"'Outfit',sans-serif",
+    transition:'border-color 0.15s,box-shadow 0.15s',
+  };
+
+  return (
+    <Modal onClose={onClose} width={560}>
+      <ModalHeader title={lead ? 'Edit Lead' : 'Add New Lead'} icon={lead?'✏️':'➕'} onClose={onClose}/>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+        <div style={{gridColumn:'span 2'}}>
+          <Field label="Business Name" required>
+            <input value={form.business_name} onChange={e=>upd('business_name',e.target.value)}
+              placeholder="e.g. Mario's Restaurant" className="input-field"/>
+          </Field>
+        </div>
+        <div style={{gridColumn:'span 2'}}>
+          <Field label="Contact Email" required>
+            <input type="email" value={form.contact_email} onChange={e=>upd('contact_email',e.target.value)}
+              placeholder="info@business.com" className="input-field"/>
+          </Field>
+        </div>
+        <Field label="Industry">
+          <select value={form.industry} onChange={e=>upd('industry',e.target.value)} className="input-field" style={IS}>
+            {INDUSTRIES.map(o=><option key={o}>{o}</option>)}
+          </select>
+        </Field>
+        <Field label="Country">
+          <input value={form.country} onChange={e=>upd('country',e.target.value)}
+            placeholder="e.g. Italy" className="input-field"/>
+        </Field>
+        <Field label="City">
+          <input value={form.city} onChange={e=>upd('city',e.target.value)}
+            placeholder="e.g. Rome" className="input-field"/>
+        </Field>
+        <Field label="Website URL">
+          <input value={form.website_url} onChange={e=>upd('website_url',e.target.value)}
+            placeholder="http://example.com" className="input-field"/>
+        </Field>
+        <div style={{gridColumn:'span 2'}}>
+          <Field label="Website Problem">
+            <select value={form.website_problem} onChange={e=>upd('website_problem',e.target.value)} className="input-field" style={IS}>
+              {PROBLEMS.map(o=><option key={o}>{o}</option>)}
+            </select>
+          </Field>
+        </div>
+        <div style={{gridColumn:'span 2'}}>
+          <Field label="Problem Detail">
+            <textarea value={form.problem_detail} onChange={e=>upd('problem_detail',e.target.value)}
+              rows={3} placeholder="Describe the website issue specifically..."
+              className="input-field" style={{resize:'vertical'}}/>
+          </Field>
+        </div>
+      </div>
+      <div style={{display:'flex',gap:10,marginTop:22,justifyContent:'flex-end'}}>
+        <button onClick={onClose} className="btn btn-ghost">Cancel</button>
+        <button onClick={handleSave}
+          disabled={!form.business_name.trim()||!form.contact_email.trim()||saving}
+          className="btn btn-primary" style={{minWidth:110,display:'flex',alignItems:'center',gap:8,justifyContent:'center'}}>
+          {saving ? <><Spinner size={12} color="#000"/> Saving…</> : 'Save Lead'}
+        </button>
+      </div>
+    </Modal>
+  );
+};
+
+// ─── EMAIL PREVIEW MODAL ──────────────────────────────────
+const EmailPreviewModal = ({lead, subject, body, onClose, onSend, sending}) => (
+  <Modal onClose={onClose} width={620}>
+    <ModalHeader title="Email Preview" icon="📧" onClose={onClose}/>
+    <div style={{background:COLORS.card,borderRadius:9,padding:14,marginBottom:14,
+      border:`1px solid ${COLORS.border}`,display:'flex',flexDirection:'column',gap:8}}>
+      {[
+        ['To', lead.contact_email],
+        ['Subject', subject],
+        ['From', `${SENDER_NAME} <${SENDER_EMAIL}>`],
+      ].map(([k,v])=>(
+        <div key={k} style={{fontSize:12,display:'flex',gap:8,alignItems:'flex-start'}}>
+          <span style={{color:COLORS.muted,fontWeight:700,minWidth:60}}>{k}:</span>
+          <span style={{color:k==='To'?COLORS.blue:k==='Subject'?COLORS.text:COLORS.muted,
+            fontFamily:k==='To'?"'IBM Plex Mono',monospace":'inherit'}}>{v}</span>
+        </div>
+      ))}
+    </div>
+    <div style={{background:'#fff',borderRadius:9,padding:'24px 28px',
+      color:'#1a1a1a',fontSize:13,lineHeight:1.9,fontFamily:"Georgia,serif",
+      border:`1px solid ${COLORS.border}`,maxHeight:360,overflowY:'auto',whiteSpace:'pre-wrap'}}>
+      {body}
+    </div>
+    <div style={{display:'flex',gap:10,marginTop:16,justifyContent:'flex-end'}}>
+      <button onClick={onClose} className="btn btn-ghost">Close</button>
+      <button onClick={onSend} disabled={sending}
+        className="btn btn-primary" style={{minWidth:130,display:'flex',alignItems:'center',gap:8,justifyContent:'center'}}>
+        {sending ? <><Spinner size={12} color="#000"/> Sending…</> : '✉️ Send Now'}
+      </button>
+    </div>
+  </Modal>
+);
+
+// ─── SETTINGS TAB ─────────────────────────────────────────
+const SettingsTab = ({cfg, onChange, onSave, onGmailConnect, gmailConnected}) => {
+  const [local, setLocal] = useState({...cfg});
+  const upd = (k,v) => setLocal(l=>({...l,[k]:v}));
+
+  const isReady = local.emailjsServiceId && local.emailjsTemplateId &&
+    local.emailjsPublicKey && local.geminiKey && local.portfolioUrl;
+
+  return (
+    <div className="fade-up" style={{maxWidth:680}}>
+      <div style={{marginBottom:24}}>
+        <h1 style={{margin:'0 0 4px',fontSize:22,fontWeight:900,letterSpacing:'-0.03em'}}>Settings</h1>
+        <p style={{color:COLORS.muted,fontSize:13}}>Configure APIs, identity and campaign preferences</p>
+      </div>
+
+      {/* Readiness status */}
+      <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:22}}>
+        <SetupChip ok={!!local.geminiKey}         label="Gemini AI"/>
+        <SetupChip ok={!!local.emailjsPublicKey}     label="EmailJS"/>
+        <SetupChip ok={!!local.portfolioUrl}         label="Portfolio URL"/>
+        <SetupChip ok={gmailConnected}               label="Gmail Connected"/>
+        <SetupChip ok={isReady}                      label="Ready to Send"/>
+      </div>
+
+      {/* Identity */}
+      <Section title="👤 Your Identity" accent={COLORS.accent}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+          {[
+            {l:'Your Name',    k:'yourName',    t:'text',  p:'Robel Gudissa'},
+            {l:'Your Title',   k:'yourTitle',   t:'text',  p:'Web Design Consultant'},
+            {l:'Your Company', k:'yourCompany', t:'text',  p:'Robel Web Studio'},
+          ].map(f=>(
+            <Field key={f.k} label={f.l}>
+              <input type={f.t} placeholder={f.p} value={local[f.k]||''}
+                onChange={e=>upd(f.k,e.target.value)} className="input-field"/>
+            </Field>
+          ))}
+          <Field label="Sender Email (fixed)">
+            <input value={SENDER_EMAIL} disabled className="input-field" style={{opacity:0.5}}/>
+          </Field>
+          <div style={{gridColumn:'span 2'}}>
+            <Field label="🌐 Portfolio URL" required hint="— shown in every email">
+              <input type="url" placeholder="https://robelgudissa.com" value={local.portfolioUrl||''}
+                onChange={e=>upd('portfolioUrl',e.target.value)} className="input-field"
+                style={{borderColor:local.portfolioUrl?COLORS.accent:COLORS.border2}}/>
+            </Field>
+          </div>
+        </div>
+      </Section>
+
+      {/* Gemini */}
+      <Section title="✨ Google Gemini AI" accent={COLORS.purple}>
+        <div style={{background:`${COLORS.purple}08`,border:`1px solid ${COLORS.purple}22`,
+          borderRadius:8,padding:'12px 14px',marginBottom:14,fontSize:12,color:COLORS.muted,lineHeight:1.8}}>
+          Gemini writes a <strong style={{color:COLORS.text}}>unique personalized email</strong> for each business,
+          referencing their exact website problem.{' '}
+          <strong style={{color:COLORS.purple}}>Free: 1,500 requests/day.</strong>{' '}
+          Get your key at{' '}
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" style={{color:COLORS.purple}}>aistudio.google.com</a>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+          <Field label="Gemini API Key" required>
+            <input type="password" placeholder="AIzaSy-xxxxxxxxxxxxxxxxxxxxxxxx"
+              value={local.geminiKey||''} onChange={e=>upd('geminiKey',e.target.value)}
+              className="input-field" style={{borderColor:local.geminiKey?COLORS.accent:COLORS.border2}}/>
+          </Field>
+          <Field label="Model">
+            <select value={local.geminiModel||'gemini-2.5-flash'}
+              onChange={e=>upd('geminiModel',e.target.value)}
+              className="input-field" style={{background:COLORS.card,border:`1px solid ${COLORS.border2}`}}>
+              <option value="gemini-2.5-flash">gemini-2.5-flash — Recommended (Free)</option>
+              <option value="gemini-2.5-pro">gemini-2.5-pro — Best quality</option>
+              <option value="gemini-2.0-flash">gemini-2.0-flash — Fast fallback</option>
+            </select>
+          </Field>
+        </div>
+      </Section>
+
+      {/* EmailJS */}
+      <Section title="📧 EmailJS — Real Email Delivery" accent={COLORS.yellow}>
+        <div style={{background:`${COLORS.yellow}08`,border:`1px solid ${COLORS.yellow}22`,
+          borderRadius:8,padding:'12px 14px',marginBottom:14,fontSize:12,color:COLORS.muted,lineHeight:1.8}}>
+          <strong style={{color:COLORS.yellow}}>Free: 200 emails/month.</strong> Setup:{' '}
+          <a href="https://emailjs.com" target="_blank" style={{color:COLORS.yellow}}>emailjs.com</a>
+          {' '}→ Add Email Service → Create Template → Copy credentials below.{' '}
+          <br/><strong style={{color:COLORS.text}}>Template must include: </strong>
+          <code style={{color:COLORS.accent,fontSize:11,background:COLORS.card,padding:'1px 5px',borderRadius:3}}>{'{{to_email}}'}</code>{' '}
+          <code style={{color:COLORS.accent,fontSize:11,background:COLORS.card,padding:'1px 5px',borderRadius:3}}>{'{{email_body}}'}</code>{' '}
+          <code style={{color:COLORS.accent,fontSize:11,background:COLORS.card,padding:'1px 5px',borderRadius:3}}>{'{{subject}}'}</code>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+          {[
+            {l:'Service ID',  k:'emailjsServiceId',  p:'service_xxxxxxx'},
+            {l:'Template ID', k:'emailjsTemplateId', p:'template_xxxxxxx'},
+            {l:'Public Key',  k:'emailjsPublicKey',  p:'xxxxxxxxxxxxxxxx',type:'password'},
+          ].map(f=>(
+            <Field key={f.k} label={f.l} required>
+              <input type={f.type||'text'} placeholder={f.p} value={local[f.k]||''}
+                onChange={e=>upd(f.k,e.target.value)} className="input-field"
+                style={{borderColor:local[f.k]?COLORS.accent:COLORS.border2}}/>
+            </Field>
+          ))}
+          <Field label="Delay Between Sends">
+            <select value={local.sendDelay||'8'} onChange={e=>upd('sendDelay',e.target.value)} className="input-field">
+              {[['3','3s (Fast)'],['8','8s (Recommended)'],['15','15s (Safe)'],['30','30s (Very safe)']].map(([v,l])=>(
+                <option key={v} value={v}>{l}</option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      </Section>
+
+      {/* Gmail OAuth */}
+      <Section title="📬 Gmail Reply Tracking" accent={COLORS.blue}>
+        <div style={{background:`${COLORS.blue}08`,border:`1px solid ${COLORS.blue}22`,
+          borderRadius:8,padding:'12px 14px',marginBottom:14,fontSize:12,color:COLORS.muted,lineHeight:1.8}}>
+          Connects to your Gmail to detect replies automatically. Setup:{' '}
+          <a href="https://console.cloud.google.com" target="_blank" style={{color:COLORS.blue}}>console.cloud.google.com</a>
+          {' '}→ New Project → Enable Gmail API → Credentials → OAuth 2.0 Client ID (Web app)
+          {' '}→ Authorised origins: your Vercel URL → paste Client ID below.
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:12,alignItems:'end'}}>
+          <Field label="Google OAuth Client ID">
+            <input type="text" placeholder="xxxx.apps.googleusercontent.com"
+              value={local.googleClientId||''} onChange={e=>upd('googleClientId',e.target.value)}
+              className="input-field" style={{borderColor:local.googleClientId?COLORS.accent:COLORS.border2}}/>
+          </Field>
+          <button onClick={()=>{ onSave(local); setTimeout(()=>onGmailConnect(local.googleClientId),300); }}
+            disabled={!local.googleClientId||gmailConnected}
+            className="btn" style={{
+              padding:'10px 18px',borderRadius:8,fontSize:13,fontWeight:700,
+              background:gmailConnected?'rgba(0,200,130,0.1)':COLORS.blue,
+              color:gmailConnected?COLORS.accent:'#fff',
+              border:gmailConnected?`1px solid ${COLORS.accent}33`:'none',
+              marginBottom:0,
+            }}>
+            {gmailConnected ? '✓ Connected' : '🔗 Connect Gmail'}
+          </button>
+        </div>
+        <div style={{marginTop:12,fontSize:11,color:COLORS.muted}}>
+          Polling every 3 minutes for new replies. Browser notifications will fire automatically.
+        </div>
+      </Section>
+
+      <div style={{display:'flex',gap:10}}>
+        <button onClick={()=>{ onSave(local); }} className="btn btn-primary" style={{padding:'12px 28px',fontSize:14}}>
+          💾 Save Settings
+        </button>
+        {isReady && (
+          <div style={{display:'flex',alignItems:'center',gap:8,
+            background:'rgba(0,200,130,0.08)',border:'1px solid rgba(0,200,130,0.2)',
+            borderRadius:8,padding:'0 16px',fontSize:12,color:COLORS.accent,fontWeight:700}}>
+            ✓ Ready to launch campaigns
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Section wrapper used by settings
+const Section = ({title,children,accent}) => (
+  <div className="card" style={{padding:22,marginBottom:14}}>
+    <div style={{fontWeight:800,fontSize:14,marginBottom:16,display:'flex',alignItems:'center',gap:8}}>
+      <span style={{width:3,height:18,borderRadius:2,background:accent,display:'inline-block',flexShrink:0}}/>
+      {title}
+    </div>
+    {children}
+  </div>
+);
+
+
+// ─── DASHBOARD TAB ─────────────────────────────────────────
+const DashboardTab = ({leads, replies, sentCount}) => {
+  const counts = useMemo(() => {
+    return leads.reduce((a,l)=>({...a,[l.status]:(a[l.status]||0)+1}),{});
+  }, [leads]);
+
+  const recentActivity = useMemo(() => {
+    const sent = leads.filter(l=>l.status!=='new' && l.lastSentAt)
+      .sort((a,b)=>new Date(b.lastSentAt)-new Date(a.lastSentAt))
+      .slice(0,5)
+      .map(l=>({type:'sent',name:l.business_name,time:l.lastSentAt,industry:l.industry,
+        city:l.city,status:l.status}));
+    const rep = replies.slice(0,5)
+      .map(r=>({type:'reply',name:r.leadName||r.senderEmail,time:r.date,
+        snippet:r.snippet}));
+    return [...sent,...rep].sort((a,b)=>new Date(b.time||0)-new Date(a.time||0)).slice(0,8);
+  }, [leads, replies]);
+
+  const openRate = sentCount > 0 ? Math.round((counts.opened||0)/sentCount*100) : 0;
+  const replyRate = sentCount > 0 ? Math.round(replies.length/sentCount*100) : 0;
+
+  return (
+    <div className="fade-up">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:24}}>
+        <div>
+          <h1 style={{margin:'0 0 4px',fontSize:22,fontWeight:900,letterSpacing:'-0.03em'}}>Live Dashboard</h1>
+          <p style={{color:COLORS.muted,fontSize:13}}>Real-time outreach activity</p>
+        </div>
+        <div style={{display:'flex',gap:10,alignItems:'center'}}>
+          <div className="live-badge">
+            <span className="status-dot status-live"/>
+            LIVE
+          </div>
+          <span style={{fontSize:11,color:COLORS.muted}}>
+            Updated {new Date().toLocaleTimeString()}
+          </span>
+        </div>
+      </div>
+
+      {/* KPI Row */}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12,marginBottom:20}}>
+        <StatCard label="Total Leads"    value={leads.length}         icon="👥" color={COLORS.blue}   sub={`${counts.new||0} new`}         delay={0}/>
+        <StatCard label="Emails Sent"    value={sentCount}            icon="📤" color={COLORS.text}   sub="all campaigns"                  delay={60}/>
+        <StatCard label="Replies"        value={replies.length}       icon="💬" color={COLORS.accent} sub={`${replyRate}% reply rate`}     delay={120}/>
+        <StatCard label="Converted"      value={counts.converted||0}  icon="🎯" color={COLORS.purple} sub={`${counts.replied||0} replied`} delay={180}/>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'5fr 4fr',gap:14,marginBottom:14}}>
+        {/* Funnel */}
+        <div className="card" style={{padding:22}}>
+          <div style={{fontWeight:800,fontSize:14,marginBottom:20}}>Lead Pipeline</div>
+          {[
+            {l:'Total Leads',    v:leads.length,      c:COLORS.blue,  max:leads.length},
+            {l:'Emails Sent',    v:sentCount,          c:COLORS.text,  max:leads.length},
+            {l:'Replied',        v:replies.length,     c:COLORS.accent,max:leads.length},
+            {l:'Converted',      v:counts.converted||0,c:COLORS.purple,max:leads.length},
+          ].map((r,i)=>(
+            <div key={i} style={{marginBottom:16}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:6,fontSize:12}}>
+                <span style={{color:COLORS.muted,fontWeight:600}}>{r.l}</span>
+                <span style={{color:r.c,fontWeight:800,fontFamily:"'IBM Plex Mono',monospace"}}>{r.v}</span>
+              </div>
+              <div style={{height:6,background:COLORS.border,borderRadius:3}}>
+                <div style={{
+                  height:'100%',borderRadius:3,background:r.c,
+                  width:`${r.max?Math.min(100,Math.round(r.v/r.max*100)):0}%`,
+                  transition:'width 1.2s ease',boxShadow:`0 0 8px ${r.c}55`,
+                }}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Recent Replies */}
+        <div className="card" style={{padding:22}}>
+          <div style={{fontWeight:800,fontSize:14,marginBottom:16,display:'flex',justifyContent:'space-between'}}>
+            Recent Replies
+            {replies.length > 0 && (
+              <span className="chip" style={{background:'rgba(0,200,130,0.1)',
+                color:COLORS.accent,border:'1px solid rgba(0,200,130,0.2)'}}>
+                {replies.length} new
+              </span>
+            )}
+          </div>
+          {replies.length === 0 ? (
+            <div style={{textAlign:'center',color:COLORS.muted,padding:'30px 0',fontSize:13}}>
+              <div style={{fontSize:28,marginBottom:8,opacity:0.5}}>📭</div>
+              No replies yet<br/>
+              <span style={{fontSize:11}}>Connect Gmail to track replies</span>
+            </div>
+          ) : replies.slice(0,5).map((r,i)=>(
+            <div key={i} style={{padding:'10px 0',
+              borderBottom:i<4?`1px solid ${COLORS.border}33`:'none'}}>
+              <div style={{display:'flex',justifyContent:'space-between',marginBottom:3}}>
+                <span style={{fontWeight:700,fontSize:13}}>{r.leadName||r.senderEmail}</span>
+                <span style={{fontSize:10,color:COLORS.muted,fontFamily:"'IBM Plex Mono',monospace"}}>
+                  {r.date ? new Date(r.date).toLocaleDateString() : ''}
+                </span>
+              </div>
+              <div style={{fontSize:11,color:COLORS.muted,overflow:'hidden',
+                textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.snippet}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Activity feed */}
+      <div className="card" style={{padding:22}}>
+        <div style={{fontWeight:800,fontSize:14,marginBottom:16}}>Activity Feed</div>
+        {recentActivity.length === 0 ? (
+          <div style={{textAlign:'center',color:COLORS.muted,padding:'20px 0',fontSize:13}}>
+            No activity yet — send your first campaign to see it here
+          </div>
+        ) : recentActivity.map((a,i)=>(
+          <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'9px 0',
+            borderBottom:i<recentActivity.length-1?`1px solid ${COLORS.border}22`:'none'}}>
+            <div style={{width:34,height:34,borderRadius:8,background:COLORS.border,
+              display:'flex',alignItems:'center',justifyContent:'center',fontSize:15,flexShrink:0}}>
+              {a.type==='reply' ? '💬' : (IND_ICON[a.industry]||'🏢')}
+            </div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:700,fontSize:13,overflow:'hidden',
+                textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                {a.name}
+                {a.type==='reply' && <span style={{color:COLORS.accent,marginLeft:8,fontSize:11}}>replied</span>}
+              </div>
+              {a.snippet && <div style={{fontSize:11,color:COLORS.muted,overflow:'hidden',
+                textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.snippet}</div>}
+              {a.city && <div style={{fontSize:11,color:COLORS.muted}}>{a.city}</div>}
+            </div>
+            <div style={{flexShrink:0}}>
+              {a.status ? <Badge status={a.status} small/> :
+                <span style={{fontSize:10,color:COLORS.accent,fontWeight:700}}>REPLIED</span>}
+            </div>
+            <div style={{fontSize:10,color:COLORS.dim,fontFamily:"'IBM Plex Mono',monospace",flexShrink:0}}>
+              {a.time ? new Date(a.time).toLocaleDateString() : ''}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── LEADS TAB ─────────────────────────────────────────────
+const LeadsTab = ({leads, onAdd, onEdit, onDelete, onSendOne, replies, bulkState, onSendAll}) => {
+  const [filter, setFilter] = useState({status:'',industry:'',search:''});
+  const [modal, setModal] = useState(null);
+  const [activeLead, setActiveLead] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
+
+  const filtered = useMemo(()=> leads.filter(l=>{
+    if (filter.status   && l.status   !== filter.status)   return false;
+    if (filter.industry && l.industry !== filter.industry) return false;
+    if (filter.search) {
+      const q = filter.search.toLowerCase();
+      if (!l.business_name.toLowerCase().includes(q) &&
+          !(l.contact_email||'').toLowerCase().includes(q) &&
+          !(l.city||'').toLowerCase().includes(q)) return false;
+    }
+    return true;
+  }), [leads, filter]);
+
+  const statusCounts = useMemo(()=>
+    leads.reduce((a,l)=>({...a,[l.status]:(a[l.status]||0)+1}),{})
+  , [leads]);
+
+  const repliedIds = new Set(replies.map(r=>r.leadId).filter(Boolean));
+
+  return (
+    <div className="fade-up">
+      {modal==='add'  && <LeadModal lead={null}       onClose={()=>setModal(null)} onSave={l=>{onAdd(l);setModal(null);}}/>}
+      {modal==='edit' && <LeadModal lead={activeLead} onClose={()=>setModal(null)} onSave={l=>{onEdit(l);setModal(null);}}/>}
+      {confirmId && (
+        <Modal onClose={()=>setConfirmId(null)} width={380}>
+          <div style={{textAlign:'center',padding:'10px 0'}}>
+            <div style={{fontSize:40,marginBottom:12}}>🗑️</div>
+            <div style={{fontWeight:800,fontSize:16,marginBottom:8}}>Remove Lead?</div>
+            <div style={{color:COLORS.muted,fontSize:13,marginBottom:24}}>
+              {leads.find(l=>l.id===confirmId)?.business_name}
+            </div>
+            <div style={{display:'flex',gap:10,justifyContent:'center'}}>
+              <button onClick={()=>setConfirmId(null)} className="btn btn-ghost">Cancel</button>
+              <button onClick={()=>{onDelete(confirmId);setConfirmId(null);}}
+                className="btn" style={{background:COLORS.red,color:'#fff',borderRadius:8,
+                  padding:'10px 20px',fontWeight:700,border:'none'}}>Delete</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+        <div>
+          <h1 style={{margin:'0 0 4px',fontSize:22,fontWeight:900,letterSpacing:'-0.03em'}}>Leads</h1>
+          <p style={{color:COLORS.muted,fontSize:13}}>{filtered.length} of {leads.length} businesses</p>
+        </div>
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={()=>setModal('add')} className="btn btn-ghost" style={{fontSize:13}}>
+            + Add Lead
+          </button>
+          <button onClick={onSendAll} disabled={bulkState.running}
+            className="btn btn-primary" style={{
+              display:'flex',alignItems:'center',gap:8,
+              background:bulkState.running?COLORS.dim:COLORS.accent,
+            }}>
+            {bulkState.running
+              ? <><Spinner size={12} color="#000"/> {bulkState.done}/{bulkState.total}</>
+              : '🚀 Send All (AI)'}
+          </button>
+        </div>
+      </div>
+
+      {/* Status filter chips */}
+      <div style={{display:'flex',gap:7,marginBottom:14,flexWrap:'wrap'}}>
+        {[{v:'',l:'All'},...Object.entries(STATUS_META).map(([v,m])=>({v,l:m.label}))].map(f=>(
+          <button key={f.v} onClick={()=>setFilter(ff=>({...ff,status:f.v}))}
+            style={{
+              padding:'5px 14px',borderRadius:20,cursor:'pointer',fontSize:12,
+              border:`1px solid ${filter.status===f.v?COLORS.accent:COLORS.border}`,
+              background:filter.status===f.v?COLORS.accentDim:'transparent',
+              color:filter.status===f.v?COLORS.accent:COLORS.muted,
+              fontWeight:filter.status===f.v?700:400,transition:'all 0.12s',
+            }}>
+            {f.l} {f.v ? `(${statusCounts[f.v]||0})` : `(${leads.length})`}
+          </button>
+        ))}
+      </div>
+
+      {/* Search + filter */}
+      <div style={{display:'flex',gap:10,marginBottom:16}}>
+        <input value={filter.search} onChange={e=>setFilter(f=>({...f,search:e.target.value}))}
+          placeholder="🔍  Search name, email, city…" className="input-field" style={{flex:1}}/>
+        <select value={filter.industry} onChange={e=>setFilter(f=>({...f,industry:e.target.value}))}
+          className="input-field" style={{width:180,background:COLORS.card,border:`1px solid ${COLORS.border2}`}}>
+          <option value="">All Industries</option>
+          {INDUSTRIES.map(o=><option key={o}>{o}</option>)}
+        </select>
+      </div>
+
+      {/* Table */}
+      <div className="card" style={{overflow:'hidden'}}>
+        <div style={{overflowX:'auto'}}>
+          <table style={{width:'100%',borderCollapse:'collapse',minWidth:860}}>
+            <thead>
+              <tr style={{background:COLORS.card,borderBottom:`1px solid ${COLORS.border}`}}>
+                {[['Business',200],['Industry',110],['Location',120],
+                  ['Problem',150],['Email',180],['Status',100],['',100]].map(([h,w])=>(
+                  <th key={h} style={{padding:'10px 14px',textAlign:'left',color:COLORS.muted,
+                    fontSize:10,textTransform:'uppercase',letterSpacing:'0.08em',
+                    fontWeight:700,minWidth:w}}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((l,i)=>(
+                <tr key={l.id} className="table-row"
+                  style={{borderBottom:`1px solid ${COLORS.border}22`}}>
+                  <td style={{padding:'11px 14px',fontWeight:700,fontSize:13}}>
+                    <div style={{display:'flex',alignItems:'center',gap:7}}>
+                      {repliedIds.has(l.id) && (
+                        <span className="status-dot" style={{background:COLORS.accent,
+                          animation:'pulse 2s ease infinite'}} title="Replied"/>
+                      )}
+                      {l.business_name}
+                    </div>
+                  </td>
+                  <td style={{padding:'11px 14px',color:COLORS.muted,fontSize:12}}>
+                    {IND_ICON[l.industry]||'🏢'} {l.industry}
+                  </td>
+                  <td style={{padding:'11px 14px',color:COLORS.muted,fontSize:12}}>
+                    {l.city}{l.city&&l.country?', ':''}{l.country}
+                  </td>
+                  <td style={{padding:'11px 14px',fontSize:11,color:COLORS.muted}}>
+                    {PROB_ICON[l.website_problem]||'⚠️'} {l.website_problem}
+                  </td>
+                  <td style={{padding:'11px 14px',fontSize:11,
+                    fontFamily:"'IBM Plex Mono',monospace",color:COLORS.blue,
+                    maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                    {l.contact_email||<span style={{color:COLORS.dim,fontFamily:'Outfit,sans-serif'}}>—</span>}
+                  </td>
+                  <td style={{padding:'11px 14px'}}>
+                    <Badge status={l.status} small/>
+                  </td>
+                  <td style={{padding:'11px 14px'}}>
+                    <div style={{display:'flex',gap:4}}>
+                      <button onClick={()=>onSendOne(l)} className="btn btn-icon"
+                        title="AI-write & send" disabled={!l.contact_email||bulkState.running}
+                        style={{color:COLORS.accent,borderColor:`${COLORS.accent}44`,fontSize:12}}>✉️</button>
+                      <button onClick={()=>{setActiveLead({...l});setModal('edit');}}
+                        className="btn btn-icon" style={{fontSize:12}}>✏️</button>
+                      <button onClick={()=>setConfirmId(l.id)}
+                        className="btn btn-icon" style={{color:COLORS.red,
+                          borderColor:`${COLORS.red}44`,fontSize:12}}>🗑</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {filtered.length === 0 && (
+            <div style={{padding:'50px 0',textAlign:'center',color:COLORS.muted}}>
+              <div style={{fontSize:32,marginBottom:10,opacity:0.4}}>🔍</div>
+              <div style={{fontWeight:700}}>No leads match</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── REPLIES TAB ────────────────────────────────────────────
+const RepliesTab = ({replies, leads, gmailConnected, onRefresh, refreshing}) => {
+  return (
+    <div className="fade-up">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
+        <div>
+          <h1 style={{margin:'0 0 4px',fontSize:22,fontWeight:900,letterSpacing:'-0.03em'}}>Replies</h1>
+          <p style={{color:COLORS.muted,fontSize:13}}>
+            {replies.length} replies tracked · auto-polls every 3 min
+          </p>
+        </div>
+        <div style={{display:'flex',gap:10,alignItems:'center'}}>
+          {!gmailConnected && (
+            <div style={{fontSize:12,color:COLORS.yellow,padding:'7px 14px',
+              background:'rgba(255,182,39,0.1)',border:'1px solid rgba(255,182,39,0.2)',
+              borderRadius:8,fontWeight:600}}>
+              ⚠️ Connect Gmail in Settings
+            </div>
+          )}
+          <button onClick={onRefresh} disabled={!gmailConnected||refreshing}
+            className="btn btn-ghost" style={{display:'flex',alignItems:'center',gap:8}}>
+            {refreshing ? <Spinner size={12}/> : '🔄'} Refresh Now
+          </button>
+        </div>
+      </div>
+
+      {replies.length === 0 ? (
+        <div className="card" style={{padding:'60px 0',textAlign:'center'}}>
+          <div style={{fontSize:48,marginBottom:16,opacity:0.3}}>📭</div>
+          <div style={{fontWeight:800,fontSize:16,marginBottom:6}}>No Replies Yet</div>
+          <div style={{color:COLORS.muted,fontSize:13,maxWidth:360,margin:'0 auto'}}>
+            {gmailConnected
+              ? 'Checking your Gmail for replies. This updates every 3 minutes automatically.'
+              : 'Connect your Gmail account in Settings to start tracking replies in real time.'}
+          </div>
+        </div>
+      ) : (
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          {replies.map((r,i)=>(
+            <div key={r.id||i} className="card" style={{padding:'18px 22px',
+              borderLeft:`3px solid ${COLORS.accent}`}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
+                <div>
+                  <div style={{fontWeight:800,fontSize:15,marginBottom:4}}>
+                    {r.leadName || r.senderEmail}
+                    {r.leadId && <span style={{marginLeft:10,fontSize:11,color:COLORS.accent,
+                      background:COLORS.accentDim,padding:'2px 8px',borderRadius:10,fontWeight:700}}>
+                      matched lead
+                    </span>}
+                  </div>
+                  <div style={{fontSize:12,color:COLORS.muted,fontFamily:"'IBM Plex Mono',monospace"}}>
+                    {r.from}
+                  </div>
+                </div>
+                <div style={{textAlign:'right',flexShrink:0}}>
+                  <div style={{fontSize:11,color:COLORS.muted,fontFamily:"'IBM Plex Mono',monospace"}}>
+                    {r.date ? new Date(r.date).toLocaleString() : ''}
+                  </div>
+                  {r.leadId && (
+                    <div style={{marginTop:4}}>
+                      <Badge status="replied" small/>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={{fontWeight:700,fontSize:13,marginBottom:8,color:COLORS.text}}>
+                {r.subject}
+              </div>
+              <div style={{fontSize:13,color:COLORS.muted,lineHeight:1.6,
+                background:COLORS.card,borderRadius:7,padding:'10px 14px',
+                border:`1px solid ${COLORS.border}`}}>
+                {r.snippet}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─── COMPOSE TAB ────────────────────────────────────────────
+const ComposeTab = ({leads, cfg, onSendAll, bulkState}) => {
+  const [testLead, setTestLead] = useState(null);
+  const [testBody, setTestBody] = useState('');
+  const [testSubj, setTestSubj] = useState('');
+  const [generating, setGenerating] = useState(false);
+  const [previewModal, setPreviewModal] = useState(false);
+  const [sendingPreview, setSendingPreview] = useState(false);
+
+  const newLeads = leads.filter(l=>l.status==='new' && l.contact_email);
+  const hasSettings = cfg.geminiKey && cfg.emailjsServiceId && cfg.emailjsPublicKey && cfg.emailjsTemplateId;
+
+  const handleGenerate = async () => {
+    if (!testLead || !cfg.geminiKey) return;
+    setGenerating(true);
+    try {
+      const [body, subj] = await Promise.all([
+        AIService.generateEmail(testLead, cfg),
+        AIService.generateSubject(testLead, cfg),
+      ]);
+      setTestBody(body);
+      setTestSubj(subj);
+    } catch(e) {
+      alert('AI generation failed: ' + e.message);
+    }
+    setGenerating(false);
+  };
+
+  const handleSendPreview = async () => {
+    if (!testLead || !testBody) return;
+    setSendingPreview(true);
+    EmailService.init(cfg.emailjsPublicKey);
+    try {
+      await EmailService.send(testLead, testBody, testSubj, cfg);
+      setPreviewModal(false);
+      setTestBody(''); setTestSubj('');
+    } catch(e) {
+      alert('Send failed: ' + e.message);
+    }
+    setSendingPreview(false);
+  };
+
+  return (
+    <div className="fade-up" style={{maxWidth:720}}>
+      {previewModal && testBody && (
+        <EmailPreviewModal
+          lead={testLead} subject={testSubj} body={testBody}
+          onClose={()=>setPreviewModal(false)}
+          onSend={handleSendPreview} sending={sendingPreview}/>
+      )}
+
+      <h1 style={{margin:'0 0 4px',fontSize:22,fontWeight:900,letterSpacing:'-0.03em'}}>Compose & Send</h1>
+      <p style={{color:COLORS.muted,fontSize:13,marginBottom:24}}>AI writes a unique email for each business</p>
+
+      {!hasSettings && (
+        <div style={{background:'rgba(255,182,39,0.08)',border:'1px solid rgba(255,182,39,0.25)',
+          borderRadius:10,padding:'14px 18px',marginBottom:20,fontSize:13,color:COLORS.yellow,fontWeight:600}}>
+          ⚠️ Complete Settings first — you need Gemini API key + EmailJS credentials
+        </div>
+      )}
+
+      {/* Bulk Send Card */}
+      <div className="card" style={{padding:24,marginBottom:16,
+        border:`1px solid ${COLORS.accent}33`}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}}>
+          <div>
+            <div style={{fontWeight:800,fontSize:16,marginBottom:4}}>🚀 Bulk AI Campaign</div>
+            <div style={{color:COLORS.muted,fontSize:13}}>
+              AI writes a personalized email for each lead, then sends automatically
+            </div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontSize:28,fontWeight:900,color:COLORS.accent,
+              fontFamily:"'IBM Plex Mono',monospace"}}>{newLeads.length}</div>
+            <div style={{fontSize:11,color:COLORS.muted}}>new leads ready</div>
+          </div>
+        </div>
+
+        {/* What AI does */}
+        <div style={{background:COLORS.card,borderRadius:9,padding:'14px 16px',marginBottom:18,fontSize:12}}>
+          <div style={{fontWeight:700,color:COLORS.purple,marginBottom:8}}>✨ What Claude does per email:</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,color:COLORS.muted}}>
+            {[
+              '→ References their exact business name',
+              '→ Calls out their specific website problem',
+              '→ Explains the business impact',
+              '→ Links to your portfolio naturally',
+              '→ Unique tone per industry',
+              '→ Ends with clear CTA (15-min call)',
+            ].map((t,i)=><span key={i}>{t}</span>)}
+          </div>
+        </div>
+
+        <div style={{display:'flex',gap:10,alignItems:'center'}}>
+          <button onClick={onSendAll} disabled={!hasSettings||bulkState.running||newLeads.length===0}
+            className="btn btn-primary" style={{
+              padding:'12px 28px',fontSize:14,display:'flex',alignItems:'center',gap:10,
+              background:(!hasSettings||bulkState.running||newLeads.length===0)?COLORS.dim:COLORS.accent,
+            }}>
+            {bulkState.running
+              ? <><Spinner size={14} color="#000"/> Sending {bulkState.done}/{bulkState.total}…</>
+              : `🚀 Start Campaign → ${newLeads.length} emails`}
+          </button>
+          {bulkState.running && (
+            <div style={{fontSize:12,color:COLORS.muted}}>
+              {bulkState.aiGenerating ? (
+                <span style={{color:COLORS.purple,display:'flex',alignItems:'center',gap:6}}>
+                  <span className="ai-dots"><span/><span/><span/></span> AI writing…
+                </span>
+              ) : '✦ Sending…'}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Single Email Test */}
+      <div className="card" style={{padding:24}}>
+        <div style={{fontWeight:800,fontSize:15,marginBottom:4}}>🧪 Test: Generate & Preview Single Email</div>
+        <div style={{color:COLORS.muted,fontSize:13,marginBottom:18}}>
+          Pick a lead, generate the AI email, review it, then send
+        </div>
+        <Field label="Select Lead">
+          <select value={testLead?.id||''} onChange={e=>{
+            const l = leads.find(x=>x.id==e.target.value);
+            setTestLead(l||null); setTestBody(''); setTestSubj('');
+          }} className="input-field" style={{background:COLORS.card,border:`1px solid ${COLORS.border2}`}}>
+            <option value="">— pick a lead —</option>
+            {leads.filter(l=>l.contact_email).map(l=>(
+              <option key={l.id} value={l.id}>
+                {l.business_name} ({l.contact_email})
+              </option>
+            ))}
+          </select>
+        </Field>
+        {testBody && (
+          <div style={{marginTop:14}}>
+            <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+              <div style={{fontWeight:700,fontSize:12,color:COLORS.accent}}>✦ AI-Generated Email</div>
+              <span style={{fontSize:11,color:COLORS.muted}}>Subject: {testSubj}</span>
+            </div>
+            <div style={{background:COLORS.card,borderRadius:8,padding:'14px 16px',
+              fontSize:12,color:COLORS.muted,lineHeight:1.8,whiteSpace:'pre-wrap',
+              border:`1px solid ${COLORS.border}`,maxHeight:240,overflowY:'auto'}}>
+              {testBody}
+            </div>
+          </div>
+        )}
+        <div style={{display:'flex',gap:10,marginTop:16}}>
+          <button onClick={handleGenerate} disabled={!testLead||!cfg.geminiKey||generating}
+            className="btn" style={{
+              background:COLORS.purple,color:'#fff',borderRadius:8,padding:'10px 20px',
+              fontSize:13,fontWeight:700,border:'none',
+              display:'flex',alignItems:'center',gap:8,
+              opacity:(!testLead||!cfg.geminiKey)?0.4:1,
+            }}>
+            {generating ? <><Spinner size={12} color="#fff"/> Generating…</> : '✨ Generate Email'}
+          </button>
+          {testBody && (
+            <button onClick={()=>setPreviewModal(true)} className="btn btn-primary"
+              style={{display:'flex',alignItems:'center',gap:8}}>
+              👁 Preview & Send
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+// ─── MAIN APP ─────────────────────────────────────────────
+function OutreachOS() {
+  const [tab, setTab]     = useState('dashboard');
+  const [toast, setToast] = useState(null);
+  const [toastKey, setToastKey] = useState(0);
+  const flash = useCallback((msg, type='ok') => {
+    setToast({msg,type}); setToastKey(k=>k+1);
+  }, []);
+
+  // Settings (persisted)
+  const [cfg, setCfg] = useState(()=> LS.get('outreachos_cfg', {
+    yourName: 'Robel Gudissa', yourTitle: 'Web Design Consultant',
+    yourCompany: 'Robel Web Studio', portfolioUrl: '',
+    geminiKey: '', geminiModel: 'gemini-2.5-flash', emailjsServiceId: '', emailjsTemplateId: '',
+    emailjsPublicKey: '', sendDelay: '8',
+    googleClientId: '',
+  }));
+
+  const saveCfg = useCallback((newCfg) => {
+    setCfg(newCfg);
+    LS.set('outreachos_cfg', newCfg);
+    flash('Settings saved ✓');
+  }, [flash]);
+
+  // Leads (persisted)
+  const [leads, setLeads] = useState(()=> {
+    const saved = LS.get('outreachos_leads', null);
+    return saved || INITIAL_LEADS;
+  });
+  const persistLeads = (updated) => { setLeads(updated); LS.set('outreachos_leads', updated); };
+
+  const addLead    = (l) => { const updated=[...leads,l]; persistLeads(updated); flash('Lead added ✓'); };
+  const editLead   = (l) => { const updated=leads.map(x=>x.id===l.id?l:x); persistLeads(updated); flash('Lead updated ✓'); };
+  const deleteLead = (id) => { const updated=leads.filter(l=>l.id!==id); persistLeads(updated); flash('Lead removed','warn'); };
+
+  // Replies (persisted)
+  const [replies, setReplies] = useState(()=> LS.get('outreachos_replies', []));
+  const persistReplies = (r) => { setReplies(r); LS.set('outreachos_replies', r); };
+
+  // Stats
+  const sentCount = useMemo(()=> leads.filter(l=>l.status!=='new'&&l.status!=='skipped').length, [leads]);
+
+  // Gmail
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const pollTimer = useRef(null);
+
+  const fetchReplies = useCallback(async (showToast=false) => {
+    if (!gmailConnected) return;
+    setRefreshing(true);
+    try {
+      const sentLeads = leads.filter(l=>l.status!=='new');
+      const found = await GmailService.fetchReplies(sentLeads);
+      if (found.length > 0) {
+        // Merge with existing, deduplicate by id
+        const existing = LS.get('outreachos_replies', []);
+        const existingIds = new Set(existing.map(r=>r.id));
+        const newOnes = found.filter(r=>!existingIds.has(r.id));
+        if (newOnes.length > 0) {
+          const merged = [...newOnes, ...existing];
+          persistReplies(merged);
+          // Mark matched leads as replied
+          const matchedIds = new Set(newOnes.map(r=>r.leadId).filter(Boolean));
+          if (matchedIds.size > 0) {
+            const updated = leads.map(l=>
+              matchedIds.has(l.id) ? {...l, status:'replied'} : l
+            );
+            persistLeads(updated);
+          }
+          // Notify
+          newOnes.forEach(r => {
+            NotifService.show(
+              `Reply from ${r.leadName||r.senderEmail}`,
+              r.snippet || r.subject || 'New reply',
+              '💬'
+            );
+          });
+          if (showToast) flash(`${newOnes.length} new reply${newOnes.length>1?'ies':''}! 💬`, 'ok');
+        } else {
+          if (showToast) flash('No new replies found', 'info');
+        }
+      } else {
+        if (showToast) flash('No replies found', 'info');
+      }
+    } catch(e) {
+      if (showToast) flash('Gmail check failed: ' + e.message, 'err');
+    }
+    setRefreshing(false);
+  }, [gmailConnected, leads, flash]);
+
+  // Start polling when Gmail connected
+  useEffect(() => {
+    if (!gmailConnected) { clearInterval(pollTimer.current); return; }
+    fetchReplies();
+    pollTimer.current = setInterval(()=> fetchReplies(), POLL_INTERVAL_MS);
+    return ()=> clearInterval(pollTimer.current);
+  }, [gmailConnected]);
+
+  const connectGmail = useCallback((clientId) => {
+    if (!clientId) { flash('Enter Google OAuth Client ID first', 'warn'); return; }
+    const ok = GmailService.init(clientId, (token, err) => {
+      if (err) { flash('Gmail auth failed: '+err, 'err'); return; }
+      setGmailConnected(true);
+      flash('Gmail connected! Checking for replies…', 'ok');
+      NotifService.requestPermission();
+    });
+    if (!ok) {
+      flash('Google Identity Services not loaded. Check your internet connection.', 'err');
+      return;
+    }
+    GmailService.requestToken();
+  }, [flash]);
+
+  // ─── BULK SEND ─────────────────────────────────────────
+  const [bulkState, setBulkState] = useState({
+    running:false, done:0, total:0, current:'', aiGenerating:false, errors:[], active:false,
+  });
+  const stopRef = useRef(false);
+
+  const runBulkSend = useCallback(async () => {
+    const { geminiKey, emailjsPublicKey, emailjsServiceId, emailjsTemplateId } = cfg;
+    if (!geminiKey||!emailjsPublicKey||!emailjsServiceId||!emailjsTemplateId) {
+      flash('Complete Settings before sending', 'err'); setTab('settings'); return;
+    }
+    EmailService.init(emailjsPublicKey);
+    const targets = leads.filter(l=>l.contact_email && l.status==='new');
+    if (!targets.length) { flash('No new leads with email addresses', 'warn'); return; }
+
+    stopRef.current = false;
+    setBulkState({running:true,done:0,total:targets.length,current:'',aiGenerating:false,errors:[],active:true});
+
+    let done=0; const errors=[];
+
+    for (const lead of targets) {
+      if (stopRef.current) break;
+
+      setBulkState(s=>({...s,current:lead.business_name,aiGenerating:true}));
+
+      // Step 1: AI generate
+      let emailBody='', subject='';
+      try {
+        [emailBody, subject] = await Promise.all([
+          AIService.generateEmail(lead, cfg),
+          AIService.generateSubject(lead, cfg),
+        ]);
+      } catch(e) {
+        errors.push(lead.business_name+': AI failed - '+e.message);
+        setBulkState(s=>({...s,aiGenerating:false,errors:[...s.errors,lead.business_name]}));
+        continue;
+      }
+
+      setBulkState(s=>({...s,aiGenerating:false}));
+
+      // Step 2: Send email
+      try {
+        await EmailService.send(lead, emailBody, subject, cfg);
+        done++;
+        const now = new Date().toISOString();
+        const updated = leads.map(l=>
+          l.id===lead.id ? {...l, status:'contacted', lastSentAt:now, lastSubject:subject} : l
+        );
+        persistLeads(updated);
+        setBulkState(s=>({...s,done}));
+      } catch(e) {
+        errors.push(lead.business_name+': Send failed - '+e.message);
+        setBulkState(s=>({...s,errors:[...s.errors,lead.business_name]}));
+      }
+
+      // Delay between sends
+      const delay = parseInt(cfg.sendDelay||'8')*1000;
+      await new Promise(r=>setTimeout(r, delay));
+    }
+
+    setBulkState(s=>({...s,running:false,done,errors}));
+    flash(`Campaign done! ${done} emails sent${errors.length?' ('+errors.length+' failed)':''}`, errors.length?'warn':'ok');
+  }, [cfg, leads, flash]);
+
+  // ─── SINGLE SEND ──────────────────────────────────────
+  const [singleModal, setSingleModal] = useState(null);
+  const [singleBody, setSingleBody]   = useState('');
+  const [singleSubj, setSingleSubj]   = useState('');
+  const [singleSending, setSingleSending] = useState(false);
+  const [singleGenerating, setSingleGenerating] = useState(false);
+
+  const sendOne = useCallback(async (lead) => {
+    if (!cfg.geminiKey) { flash('Add Gemini API key in Settings', 'warn'); setTab('settings'); return; }
+    setSingleModal(lead); setSingleBody(''); setSingleSubj(''); setSingleGenerating(true);
+    try {
+      const [body, subj] = await Promise.all([
+        AIService.generateEmail(lead, cfg),
+        AIService.generateSubject(lead, cfg),
+      ]);
+      setSingleBody(body); setSingleSubj(subj);
+    } catch(e) {
+      flash('AI generation failed: ' + e.message, 'err');
+      setSingleModal(null);
+    }
+    setSingleGenerating(false);
+  }, [cfg, flash]);
+
+  const handleSingleSend = useCallback(async () => {
+    if (!singleModal||!singleBody) return;
+    setSingleSending(true);
+    EmailService.init(cfg.emailjsPublicKey);
+    try {
+      await EmailService.send(singleModal, singleBody, singleSubj, cfg);
+      const now = new Date().toISOString();
+      const updated = leads.map(l=>
+        l.id===singleModal.id ? {...l,status:'contacted',lastSentAt:now,lastSubject:singleSubj} : l
+      );
+      persistLeads(updated);
+      flash(`Email sent to ${singleModal.contact_email} ✓`);
+      setSingleModal(null); setSingleBody(''); setSingleSubj('');
+    } catch(e) {
+      flash('Send failed: '+e.message, 'err');
+    }
+    setSingleSending(false);
+  }, [singleModal, singleBody, singleSubj, cfg, leads, flash]);
+
+  // ─── NAV ──────────────────────────────────────────────
+  const NAV = [
+    {id:'dashboard',icon:'◈', label:'Dashboard'},
+    {id:'leads',    icon:'◉', label:'Leads',    badge:leads.length},
+    {id:'compose',  icon:'✦', label:'Compose'},
+    {id:'replies',  icon:'💬',label:'Replies',  badge:replies.length||null, accent:replies.length>0},
+    {id:'settings', icon:'◌', label:'Settings'},
+  ];
+
+  // ─── RENDER ────────────────────────────────────────────
+  return (
+    <div style={{display:'flex',height:'100vh',background:COLORS.bg,color:COLORS.text,overflow:'hidden'}}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+
+      {/* Toast */}
+      {toast && <Toast key={toastKey} msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+
+      {/* Single email generating overlay */}
+      {singleGenerating && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',
+          display:'flex',alignItems:'center',justifyContent:'center',zIndex:700,
+          backdropFilter:'blur(10px)'}}>
+          <div className="card" style={{padding:'32px 40px',textAlign:'center'}}>
+            <div style={{fontSize:40,marginBottom:16}}>✨</div>
+            <div style={{fontWeight:800,fontSize:16,marginBottom:8}}>Claude is writing your email</div>
+            <div style={{color:COLORS.muted,fontSize:13,marginBottom:16}}>
+              Personalizing for {singleModal?.business_name}...
+            </div>
+            <div className="ai-dots" style={{justifyContent:'center',display:'flex'}}>
+              <span/><span/><span/>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email preview modal */}
+      {singleModal && singleBody && !singleGenerating && (
+        <EmailPreviewModal
+          lead={singleModal} subject={singleSubj} body={singleBody}
+          onClose={()=>{setSingleModal(null);setSingleBody('');setSingleSubj('');}}
+          onSend={handleSingleSend} sending={singleSending}/>
+      )}
+
+      {/* Progress banner */}
+      <ProgressBanner
+        state={bulkState}
+        onStop={()=>{stopRef.current=true; flash('Stopping…','warn');}}
+        onClose={()=>setBulkState(s=>({...s,active:false,total:0,done:0}))}/>
+
+      {/* Sidebar */}
+      <div style={{
+        width:220, background:COLORS.surface, borderRight:`1px solid ${COLORS.border}`,
+        display:'flex', flexDirection:'column', flexShrink:0,
+      }}>
+        {/* Logo */}
+        <div style={{padding:'20px 18px 16px',borderBottom:`1px solid ${COLORS.border}`}}>
+          <div style={{fontSize:17,fontWeight:900,letterSpacing:'-0.03em',
+            background:'linear-gradient(135deg, #00c882, #3b9eff)',
+            WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',
+            fontFamily:"'IBM Plex Mono',monospace"}}>
+            ⚡ OutreachOS
+          </div>
+          <div style={{fontSize:10,color:COLORS.muted,marginTop:3,
+            textTransform:'uppercase',letterSpacing:'0.1em'}}>
+            AI Outreach Platform
+          </div>
+        </div>
+
+        {/* Sender info */}
+        <div style={{padding:'12px 18px',borderBottom:`1px solid ${COLORS.border}`,
+          background:COLORS.card,fontSize:11}}>
+          <div style={{color:COLORS.muted,marginBottom:3,fontWeight:700,
+            textTransform:'uppercase',letterSpacing:'0.06em',fontSize:9}}>Sending As</div>
+          <div style={{color:COLORS.accent,fontFamily:"'IBM Plex Mono',monospace",fontSize:10,
+            overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+            {SENDER_EMAIL}
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav style={{padding:'10px 8px',flex:1}}>
+          {NAV.map(n=>(
+            <div key={n.id} className={`nav-item${tab===n.id?' active':''}`}
+              onClick={()=>setTab(n.id)}
+              style={{
+                display:'flex',alignItems:'center',gap:10,padding:'10px 12px',
+                borderRadius:8,marginBottom:2,
+                background:tab===n.id?'rgba(0,200,130,0.1)':'transparent',
+                color:tab===n.id?COLORS.accent:COLORS.muted,
+                fontWeight:tab===n.id?700:400,fontSize:13,
+              }}>
+              <span style={{fontSize:14,flexShrink:0}}>{n.icon}</span>
+              <span style={{flex:1}}>{n.label}</span>
+              {n.badge && (
+                <span style={{
+                  background:n.accent?COLORS.accent:tab===n.id?COLORS.accent:COLORS.border,
+                  color:n.accent?'#000':tab===n.id?'#000':COLORS.muted,
+                  borderRadius:10,padding:'1px 8px',fontSize:10,fontWeight:800,
+                  fontFamily:"'IBM Plex Mono',monospace",
+                }}>{n.badge}</span>
+              )}
+            </div>
+          ))}
+        </nav>
+
+        {/* Gmail status */}
+        <div style={{padding:'12px 16px',borderTop:`1px solid ${COLORS.border}`}}>
+          <div style={{display:'flex',alignItems:'center',gap:7,fontSize:11}}>
+            <span className="status-dot" style={{
+              background:gmailConnected?COLORS.accent:COLORS.dim,
+              animation:gmailConnected?'pulse 2s ease infinite':'none',
+            }}/>
+            <span style={{color:gmailConnected?COLORS.accent:COLORS.muted,fontWeight:600}}>
+              {gmailConnected?'Gmail Live':'Gmail Off'}
+            </span>
+          </div>
+        </div>
+
+        {/* User */}
+        <div style={{padding:'14px 16px',borderTop:`1px solid ${COLORS.border}`}}>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <div style={{width:34,height:34,borderRadius:'50%',
+              background:'linear-gradient(135deg,#00c882,#3b9eff)',
+              display:'flex',alignItems:'center',justifyContent:'center',
+              fontSize:13,fontWeight:900,color:'#000',flexShrink:0,
+              fontFamily:"'IBM Plex Mono',monospace"}}>RG</div>
+            <div>
+              <div style={{color:COLORS.text,fontWeight:700,fontSize:12}}>
+                {cfg.yourName||'Robel Gudissa'}
+              </div>
+              <div style={{color:COLORS.muted,fontSize:10}}>{cfg.yourTitle||'Web Consultant'}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main */}
+      <div className="scroll-area" style={{flex:1,padding:'28px 32px'}}>
+        {tab==='dashboard' && (
+          <DashboardTab leads={leads} replies={replies} sentCount={sentCount}/>
+        )}
+        {tab==='leads' && (
+          <LeadsTab
+            leads={leads} replies={replies}
+            onAdd={addLead} onEdit={editLead} onDelete={deleteLead}
+            onSendOne={sendOne} bulkState={bulkState} onSendAll={runBulkSend}/>
+        )}
+        {tab==='compose' && (
+          <ComposeTab leads={leads} cfg={cfg} onSendAll={runBulkSend} bulkState={bulkState}/>
+        )}
+        {tab==='replies' && (
+          <RepliesTab
+            replies={replies} leads={leads}
+            gmailConnected={gmailConnected}
+            onRefresh={()=>fetchReplies(true)} refreshing={refreshing}/>
+        )}
+        {tab==='settings' && (
+          <SettingsTab
+            cfg={cfg} onChange={setCfg} onSave={saveCfg}
+            onGmailConnect={connectGmail} gmailConnected={gmailConnected}/>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<OutreachOS/>);
+</script>
+</body>
+</html>
